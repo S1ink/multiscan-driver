@@ -25,6 +25,7 @@ find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
 find_package(std_msgs REQUIRED)
 find_package(sensor_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 include_directories(${EIGEN3_INCLUDE_DIRS})
@@ -50,7 +51,8 @@ target_link_libraries(multiscan_driver
 ament_target_dependencies(multiscan_driver
   rclcpp
   std_msgs
-  sensor_msgs)
+  sensor_msgs
+  tf2_ros)
 target_include_directories(multiscan_driver PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
@@ -71,5 +73,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-ament_export_dependencies(rclcpp std_msgs sensor_msgs)
+ament_export_dependencies(rclcpp std_msgs sensor_msgs tf2_ros)
 ament_package()
