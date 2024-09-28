@@ -1,17 +1,56 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.15)
 project(multiscan_driver)
+
+# Default to C99
+if(NOT CMAKE_C_STANDARD)
+  set(CMAKE_C_STANDARD 99)
+endif()
+
+# Default to C++17
+if(NOT CMAKE_CXX_STANDARD)
+  set(CMAKE_CXX_STANDARD 17)
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
 endif()
 
-# find dependencies
-find_package(ament_cmake REQUIRED)
-# uncomment the following section in order to fill in
-# further dependencies manually.
-# find_package(<dependency> REQUIRED)
+if(NOT MSVC)
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+  endif()
+endif()
 
-add_executable(multiscan_driver src/multiscan_driver.cpp)
+find_package(ament_cmake REQUIRED)
+find_package(rclcpp REQUIRED)
+find_package(std_msgs REQUIRED)
+find_package(sensor_msgs REQUIRED)
+find_package(Eigen3 REQUIRED)
+
+include_directories(${EIGEN3_INCLUDE_DIRS})
+
+include_directories(include)
+include_directories(SYSTEM)
+
+add_library(scansegment_xd STATIC
+  "src/sick_scan_xd/msgpack11/msgpack11.cpp"
+  "src/sick_scan_xd/compact_parser.cpp"
+  "src/sick_scan_xd/msgpack_parser.cpp"
+  "src/sick_scan_xd/scansegment_parser_output.cpp"
+  "src/sick_scan_xd/softwarePLL.cpp"
+  "src/sick_scan_xd/udp_receiver.cpp"
+  "src/sick_scan_xd/udp_sockets.cpp"
+  "src/sick_scan_xd/wsa_init.cpp")
+ament_target_dependencies(scansegment_xd)
+
+add_executable(multiscan_driver "src/multiscan_driver.cpp")
+target_link_libraries(multiscan_driver
+  scansegment_xd
+  Eigen3::Eigen)
+ament_target_dependencies(multiscan_driver
+  rclcpp
+  std_msgs
+  sensor_msgs)
 target_include_directories(multiscan_driver PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include/${PROJECT_NAME}>)
@@ -32,4 +71,5 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
+ament_export_dependencies(rclcpp std_msgs sensor_msgs)
 ament_package()
