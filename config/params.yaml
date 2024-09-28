@@ -1,0 +1,10 @@
+/**:
+  ros__parameters:
+
+    lidar_frame: "lidar_link"
+    lidar_hostname: ""
+    lidar_udp_port: 2115
+    use_msgpack: false
+    udp_reset_timeout: 2.
+    udp_receive_timeout: 1.
+    max_segment_buffers: 3

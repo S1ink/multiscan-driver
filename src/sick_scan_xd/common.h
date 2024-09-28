@@ -92,7 +92,7 @@
 #define SCANDATA_MSGPACK 1
 #define SCANDATA_COMPACT 2
 
-#define ROS_DEBUG_STREAM(x) std::cout << x << std::endl;
+#define ROS_DEBUG_STREAM(x) /*std::cout << x << std::endl;*/
 #define ROS_INFO_STREAM(x) std::cout << x << std::endl;
 #define ROS_WARN_STREAM(x) std::cout << x << std::endl;
 #define ROS_ERROR_STREAM(x) std::cout << x << std::endl;

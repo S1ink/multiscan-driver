@@ -136,9 +136,9 @@ namespace sick_scansegment_xd
             float range;     // polar coordinate range in meter
             float azimuth;   // polar coordinate azimuth in radians
             float elevation; // polar coordinate elevation in radians
-            int groupIdx;    // group index (layer), 0 <= groupIdx < 16 for multiScan136
-            int echoIdx;     // echo index, 0 <= echoIdx < 3 for multiScan136
-            int pointIdx;    // point index, 0 <= pointIdx < 30 resp. 0 <= pointIdx < 240 for multiScan136
+            uint32_t groupIdx;    // group index (layer), 0 <= groupIdx < 16 for multiScan136
+            uint32_t echoIdx;     // echo index, 0 <= echoIdx < 3 for multiScan136
+            uint32_t pointIdx;    // point index, 0 <= pointIdx < 30 resp. 0 <= pointIdx < 240 for multiScan136
             uint64_t lidar_timestamp_microsec; // lidar timestamp in microseconds
             uint8_t reflectorbit; // optional reflector bit, 0 or 1, default: 0
         };

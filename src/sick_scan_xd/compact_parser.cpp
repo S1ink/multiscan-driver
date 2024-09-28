@@ -57,6 +57,8 @@
 // #include "config.h"
 #include "udp_receiver.h"
 
+#define TARGET_IS_LITTLE_ENDIAN 1
+
 union COMPACT_4BYTE_UNION
 {
 uint8_t u8_bytes[4];
@@ -552,7 +554,7 @@ bool sick_scansegment_xd::CompactDataParser::ParseModuleMeasurementData(const ui
         measurement_data.scandata[layer_idx].scanlines = std::vector<ScanSegmentParserOutput::Scanline>(num_echos);
         for (uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
         {
-        measurement_data.scandata[layer_idx].scanlines[echo_idx].points = std::vector<ScanSegmentParserOutput::LidarPoint>(meta_data.NumberOfBeamsPerScan);
+            measurement_data.scandata[layer_idx].scanlines[echo_idx].points = std::vector<ScanSegmentParserOutput::LidarPoint>(meta_data.NumberOfBeamsPerScan);
         }
         lut_layer_elevation[layer_idx] = -meta_data.Phi[layer_idx]; // elevation must be negated, a positive pitch-angle yields negative z-coordinates (compare to MsgPackParser::Parse in msgpack_parser.cpp)
         lut_layer_azimuth_start[layer_idx] = meta_data.ThetaStart[layer_idx];
@@ -570,111 +572,111 @@ bool sick_scansegment_xd::CompactDataParser::ParseModuleMeasurementData(const ui
     {
         for (uint32_t layer_idx = 0; layer_idx < num_layers; layer_idx++)
         {
-        float layer_elevation = lut_layer_elevation[layer_idx];
-        float layer_azimuth_start = lut_layer_azimuth_start[layer_idx];
-        float layer_azimuth_stop = lut_layer_azimuth_stop[layer_idx];
-        float layer_azimuth_delta = lut_layer_azimuth_delta[layer_idx];
-        uint64_t lidar_timestamp_microsec_start = lut_layer_lidar_timestamp_microsec_start[layer_idx];
-        uint64_t lidar_timestamp_microsec_stop = lut_layer_lidar_timestamp_microsec_stop[layer_idx];
-        uint64_t lidar_timestamp_microsec = ((point_idx * (lidar_timestamp_microsec_stop - lidar_timestamp_microsec_start)) / (meta_data.NumberOfBeamsPerScan - 1)) + lidar_timestamp_microsec_start;
-        float sin_elevation = lut_sin_elevation[layer_idx];
-        float cos_elevation = lut_cos_elevation[layer_idx];
-        int groupIdx = lut_groupIdx[layer_idx];
-        std::vector<ScanSegmentParserOutput::LidarPoint> points(num_echos);
-        uint8_t beam_property = 0;
-        float azimuth = 0;
-        for (uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
-        {
-            if (dist_available)
+            float layer_elevation = lut_layer_elevation[layer_idx];
+            float layer_azimuth_start = lut_layer_azimuth_start[layer_idx];
+            float layer_azimuth_stop = lut_layer_azimuth_stop[layer_idx];
+            float layer_azimuth_delta = lut_layer_azimuth_delta[layer_idx];
+            uint64_t lidar_timestamp_microsec_start = lut_layer_lidar_timestamp_microsec_start[layer_idx];
+            uint64_t lidar_timestamp_microsec_stop = lut_layer_lidar_timestamp_microsec_stop[layer_idx];
+            uint64_t lidar_timestamp_microsec = ((point_idx * (lidar_timestamp_microsec_stop - lidar_timestamp_microsec_start)) / (meta_data.NumberOfBeamsPerScan - 1)) + lidar_timestamp_microsec_start;
+            float sin_elevation = lut_sin_elevation[layer_idx];
+            float cos_elevation = lut_cos_elevation[layer_idx];
+            int groupIdx = lut_groupIdx[layer_idx];
+            std::vector<ScanSegmentParserOutput::LidarPoint> points(num_echos);
+            uint8_t beam_property = 0;
+            float azimuth = 0;
+            for (uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
             {
-            if (endOfBuffer(byte_cnt, sizeof(uint16_t), num_bytes)) // if (byte_cnt + sizeof(uint16_t) > num_bytes)
-            {
-                ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
-                << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan << ", echo " << echo_idx << " of " << num_echos);
-                return false;
-            }
-            points[echo_idx].range = (dist_scale_factor * (float)readUnsigned<uint16_t>(payload + byte_cnt, &byte_cnt)) / 1000.0f;
-            }
-            if (rssi_available)
-            {
-            if (endOfBuffer(byte_cnt, sizeof(uint16_t), num_bytes)) // if (byte_cnt + sizeof(uint16_t) > num_bytes)
-            {
-                ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
-                << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan << ", echo " << echo_idx << " of " << num_echos);
-                return false;
-            }
-            points[echo_idx].i = (float)readUnsigned<uint16_t>(payload + byte_cnt, &byte_cnt);
-            }
-        }
-        std::vector<ReadBeamAzimOrderEnum> azim_prop_order;
-        if (compact_header.telegramVersion == 3) // for backward compatibility only
-        {
-            azim_prop_order = { READ_BEAM_AZIM, READ_BEAM_PROP }; // telegramVersion 3: 2 byte azimuth + 1 byte property
-        }
-        else if (compact_header.telegramVersion == 4)
-        {
-            azim_prop_order = { READ_BEAM_PROP, READ_BEAM_AZIM }; // telegramVersion 4 (default): 1 byte property + 2 byte azimuth
-        }
-        else
-        {
-            ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): telegramVersion=" << compact_header.telegramVersion << " not supported");
-            return false;
-        }
-        for (int azim_prop_cnt = 0; azim_prop_cnt < 2; azim_prop_cnt++)
-        {
-            if (azim_prop_order[azim_prop_cnt] == READ_BEAM_AZIM)
-            {
-            if (beam_azim_available)
-            {
-                if (endOfBuffer(byte_cnt, sizeof(uint16_t), num_bytes)) // if (byte_cnt + sizeof(uint16_t) > num_bytes)
+                if (dist_available)
                 {
-                ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
-                    << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan);
-                return false;
+                    if (endOfBuffer(byte_cnt, sizeof(uint16_t), num_bytes)) // if (byte_cnt + sizeof(uint16_t) > num_bytes)
+                    {
+                        ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
+                            << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan << ", echo " << echo_idx << " of " << num_echos);
+                        return false;
+                    }
+                    points[echo_idx].range = (dist_scale_factor * (float)readUnsigned<uint16_t>(payload + byte_cnt, &byte_cnt)) / 1000.0f;
                 }
-                azimuth = ((float)readUnsigned<uint16_t>(payload + byte_cnt, &byte_cnt) - 16384.0f) / 5215.0f + azimuth_offset;
+                if (rssi_available)
+                {
+                    if (endOfBuffer(byte_cnt, sizeof(uint16_t), num_bytes)) // if (byte_cnt + sizeof(uint16_t) > num_bytes)
+                    {
+                        ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
+                            << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan << ", echo " << echo_idx << " of " << num_echos);
+                        return false;
+                    }
+                    points[echo_idx].i = (float)readUnsigned<uint16_t>(payload + byte_cnt, &byte_cnt);
+                }
+            }
+            std::vector<ReadBeamAzimOrderEnum> azim_prop_order;
+            if (compact_header.telegramVersion == 3) // for backward compatibility only
+            {
+                azim_prop_order = { READ_BEAM_AZIM, READ_BEAM_PROP }; // telegramVersion 3: 2 byte azimuth + 1 byte property
+            }
+            else if (compact_header.telegramVersion == 4)
+            {
+                azim_prop_order = { READ_BEAM_PROP, READ_BEAM_AZIM }; // telegramVersion 4 (default): 1 byte property + 2 byte azimuth
             }
             else
             {
-                azimuth = layer_azimuth_start + point_idx * layer_azimuth_delta + azimuth_offset;
-            }
-            }
-            if (azim_prop_order[azim_prop_cnt] == READ_BEAM_PROP)
-            {
-            if (beam_prop_available)
-            {
-                if (byte_cnt + sizeof(uint8_t) > num_bytes)
-                {
-                ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
-                    << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan);
+                ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): telegramVersion=" << compact_header.telegramVersion << " not supported");
                 return false;
+            }
+            for (int azim_prop_cnt = 0; azim_prop_cnt < 2; azim_prop_cnt++)
+            {
+                if (azim_prop_order[azim_prop_cnt] == READ_BEAM_AZIM)
+                {
+                    if (beam_azim_available)
+                    {
+                        if (endOfBuffer(byte_cnt, sizeof(uint16_t), num_bytes)) // if (byte_cnt + sizeof(uint16_t) > num_bytes)
+                        {
+                            ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
+                                << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan);
+                            return false;
+                        }
+                        azimuth = ((float)readUnsigned<uint16_t>(payload + byte_cnt, &byte_cnt) - 16384.0f) / 5215.0f + azimuth_offset;
+                    }
+                    else
+                    {
+                        azimuth = layer_azimuth_start + point_idx * layer_azimuth_delta + azimuth_offset;
+                    }
                 }
-                beam_property = readUnsigned<uint8_t>(payload + byte_cnt, &byte_cnt);
+                if (azim_prop_order[azim_prop_cnt] == READ_BEAM_PROP)
+                {
+                    if (beam_prop_available)
+                    {
+                        if (byte_cnt + sizeof(uint8_t) > num_bytes)
+                        {
+                            ROS_ERROR_STREAM("## ERROR CompactDataParser::ParseModuleMeasurementData(" << __LINE__ << "): byte_cnt=" << byte_cnt << ", num_bytes=" << num_bytes << ", layer " << layer_idx << " of " << num_layers
+                                << ", point " << point_idx << " of " << meta_data.NumberOfBeamsPerScan);
+                            return false;
+                        }
+                        beam_property = readUnsigned<uint8_t>(payload + byte_cnt, &byte_cnt);
+                    }
+                }
             }
+            float sin_azimuth = std::sin(azimuth);
+            float cos_azimuth = std::cos(azimuth);
+            // std::stringstream s;
+            // s << "Measurement[" << layer_idx << "," << point_idx << "]=(";
+            // for(uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
+            //     s << points[echo_idx].range << "," << points[echo_idx].i << ",";
+            // s << (int)beam_property << "," << azimuth << ")";
+            // ROS_DEBUG_STREAM("" << s.str());
+            for (uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
+            {
+                points[echo_idx].azimuth = azimuth;
+                points[echo_idx].elevation = layer_elevation;
+                points[echo_idx].x = points[echo_idx].range * cos_azimuth * cos_elevation;
+                points[echo_idx].y = points[echo_idx].range * sin_azimuth * cos_elevation;
+                points[echo_idx].z = points[echo_idx].range * sin_elevation;
+                points[echo_idx].echoIdx = echo_idx;
+                points[echo_idx].groupIdx = groupIdx;
+                points[echo_idx].pointIdx = point_idx;
+                points[echo_idx].lidar_timestamp_microsec = lidar_timestamp_microsec;
+                points[echo_idx].reflectorbit |= (beam_property & 0x01); // reflector bit is set, if a reflector is detected on any number of echos
+                measurement_data.scandata[layer_idx].scanlines[echo_idx].points[point_idx] = points[echo_idx];
             }
-        }
-        float sin_azimuth = std::sin(azimuth);
-        float cos_azimuth = std::cos(azimuth);
-        // std::stringstream s;
-        // s << "Measurement[" << layer_idx << "," << point_idx << "]=(";
-        // for(uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
-        //     s << points[echo_idx].range << "," << points[echo_idx].i << ",";
-        // s << (int)beam_property << "," << azimuth << ")";
-        // ROS_DEBUG_STREAM("" << s.str());
-        for (uint32_t echo_idx = 0; echo_idx < num_echos; echo_idx++)
-        {
-            points[echo_idx].azimuth = azimuth;
-            points[echo_idx].elevation = layer_elevation;
-            points[echo_idx].x = points[echo_idx].range * cos_azimuth * cos_elevation;
-            points[echo_idx].y = points[echo_idx].range * sin_azimuth * cos_elevation;
-            points[echo_idx].z = points[echo_idx].range * sin_elevation;
-            points[echo_idx].echoIdx = echo_idx;
-            points[echo_idx].groupIdx = groupIdx;
-            points[echo_idx].pointIdx = point_idx;
-            points[echo_idx].lidar_timestamp_microsec = lidar_timestamp_microsec;
-            points[echo_idx].reflectorbit |= (beam_property & 0x01); // reflector bit is set, if a reflector is detected on any number of echos
-            measurement_data.scandata[layer_idx].scanlines[echo_idx].points[point_idx] = points[echo_idx];
-        }
         }
     }
     if (byte_cnt != num_bytes)
@@ -911,7 +913,7 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
             // result.scandata[groupIdx] = all scandata of layer <groupIdx> appended to one scanline
             for(int line_idx = 0; line_idx < scandata.scanlines.size(); line_idx++)
             {
-            std::vector<ScanSegmentParserOutput::LidarPoint>& points = scandata.scanlines[line_idx].points;
+                std::vector<ScanSegmentParserOutput::LidarPoint>& points = scandata.scanlines[line_idx].points;
                 for(int point_idx = 0; point_idx < points.size(); point_idx++)
                 {
                     ScanSegmentParserOutput::LidarPoint& point = points[point_idx];
@@ -919,7 +921,7 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
                     int echoIdx = point.echoIdx;
                     while(result.scandata.size() <= groupIdx)
                     {
-                    result.scandata.push_back(ScanSegmentParserOutput::Scangroup());
+                        result.scandata.push_back(ScanSegmentParserOutput::Scangroup());
                     }
                     if (result.scandata[groupIdx].scanlines.empty())
                     {
@@ -930,7 +932,7 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
                     }
                     while(result.scandata[groupIdx].scanlines.size() <= echoIdx)
                     {
-                    result.scandata[groupIdx].scanlines.push_back(ScanSegmentParserOutput::Scanline());
+                        result.scandata[groupIdx].scanlines.push_back(ScanSegmentParserOutput::Scanline());
                     }
                     if (result.scandata[groupIdx].scanlines[echoIdx].points.empty())
                     {
