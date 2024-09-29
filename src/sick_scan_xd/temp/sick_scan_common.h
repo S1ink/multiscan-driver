@@ -256,24 +256,24 @@ namespace sick_scan_xd
     // bool handleNAV350BinaryPositionData(const uint8_t* receiveBuffer, int receiveBufferLength, short& elevAngleX200, double& elevationAngleInRad, rosTime& recvTimeStamp,
     //     bool config_sw_pll_only_publish, double config_time_offset, SickGenericParser* parser_, int& numEchos, ros_sensor_msgs::LaserScan& msg, NAV350mNPOSData& navdata);
 
-    int setAligmentMode(int _AligmentMode);
+    // int setAligmentMode(int _AligmentMode);
 
-    int setMeanFilter(bool _active, int _numberOfScans);
+    // int setMeanFilter(bool _active, int _numberOfScans);
 
-    int setApplicationMode(bool _active, int _mode); //0=RANG (Ranging) 1=FEVL (Field Application).
-    int ActivateStandBy(void);
+    // int setApplicationMode(bool _active, int _mode); //0=RANG (Ranging) 1=FEVL (Field Application).
+    // int ActivateStandBy(void);
 
-    bool testSettingIpAddress();
+    // bool testSettingIpAddress();
 
-    bool testsetParticleFilter();
+    // bool testsetParticleFilter();
 
-    bool testsetMeanFilter();
+    // bool testsetMeanFilter();
 
-    bool testsetAligmentMode();
+    // bool testsetAligmentMode();
 
-    bool testsetActivateStandBy();
+    // bool testsetActivateStandBy();
 
-    bool testsetApplicationMode();
+    // bool testsetApplicationMode();
 
     int getReadTimeOutInMs();
 
@@ -295,8 +295,8 @@ namespace sick_scan_xd
     rcl_interfaces::msg::SetParametersResult update_config_cb(const std::vector<rclcpp::Parameter> &parameters);
 #endif
 
-    double get_expected_frequency() const
-    { return expectedFrequency_; }
+    // double get_expected_frequency() const
+    // { return expectedFrequency_; }
 
     int convertAscii2BinaryCmd(const char *requestAscii, std::vector<unsigned char> *requestBinary);
 
@@ -315,19 +315,19 @@ namespace sick_scan_xd
      * \param IpAdress new IP address
      * \returns true if ip was changed and scanner is rebooting
      */
-    bool changeIPandreboot(const std::string& IpAdress);
+    // bool changeIPandreboot(const std::string& IpAdress);
 
     SickScanCommonNw m_nw;
 
-    SickScanConfig *getConfigPtr()
-    {
-      return (&config_);
-    }
+    // SickScanConfig *getConfigPtr()
+    // {
+    //   return (&config_);
+    // }
 
-    ScannerBasicParam* getCurrentParamPtr()
-    {
-      return parser_ ? parser_->getCurrentParamPtr() : 0;
-    }
+    // ScannerBasicParam* getCurrentParamPtr()
+    // {
+    //   return parser_ ? parser_->getCurrentParamPtr() : 0;
+    // }
 
     std::string cmdSetAccessMode3(void);
 

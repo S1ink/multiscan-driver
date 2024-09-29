@@ -72,9 +72,9 @@ namespace sick_scan_xd
   {
   public:
 
-    SickScanMessages(rosNodePtr nh = 0);
+    // SickScanMessages(rosNodePtr nh = 0);
 
-    virtual ~SickScanMessages();
+    // virtual ~SickScanMessages();
 
     /*
      * @brief parses and converts a lidar LIDoutputstate message to a ros LIDoutputstate message
@@ -93,7 +93,7 @@ namespace sick_scan_xd
      * 
      * @return true on success, false on error
      */
-    static bool parseLIDoutputstateMsg(const rosTime& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, const std::string& frame_id, sick_scan_msg::LIDoutputstateMsg& output_msg);
+    // static bool parseLIDoutputstateMsg(const rosTime& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, const std::string& frame_id, sick_scan_msg::LIDoutputstateMsg& output_msg);
 
     /*
      * @brief parses and converts a lidar LFErec message to a ros LFErec message
@@ -119,7 +119,7 @@ namespace sick_scan_xd
      * 
      * @return true on success, false on error
      */
-    static bool parseLFErecMsg(const rosTime& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, EVAL_FIELD_SUPPORT eval_field_logic, const std::string& frame_id, sick_scan_msg::LFErecMsg& output_msg);
+    // static bool parseLFErecMsg(const rosTime& timeStamp, uint8_t* receiveBuffer, int receiveLength, bool useBinaryProtocol, EVAL_FIELD_SUPPORT eval_field_logic, const std::string& frame_id, sick_scan_msg::LFErecMsg& output_msg);
 
     /*
      * @brief returns the sopas command keyword, e.g.: getSopasCmdKeyword("\x02\x02\x02\x02\x00\x00\x00\x8esSN LFErec \x3", 20) returns "LFErec".

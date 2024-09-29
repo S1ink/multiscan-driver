@@ -66,12 +66,10 @@
 #define SCANSEGMENT_XD_SOPAS_ARGS_BIG_ENDIAN (true) // Arguments of SOPAS commands are big endian encoded
 
 sick_scan_xd::SickScanServices::SickScanServices(sick_scan_xd::SickScanCommonTcp* common_tcp, bool use_cola_binary)
-  : m_common_tcp(common_tcp), m_cola_binary(use_cola_binary), m_client_authorization_pw("F4724744");
+  : m_common_tcp(common_tcp), m_cola_binary(use_cola_binary), m_client_authorization_pw("F4724744")
 {}
 
-sick_scan_xd::SickScanServices::~SickScanServices()
-{
-}
+sick_scan_xd::SickScanServices::~SickScanServices() {}
 
 /*!
  * Sends a sopas command and returns the lidar reply.

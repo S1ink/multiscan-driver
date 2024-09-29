@@ -101,7 +101,8 @@
 #include <climits>
 // #include <sick_scan/sick_generic_imu.h>
 // #include <sick_scan/sick_scan_messages.h>
-#include "sick_scan/sick_scan_services.h"
+#include "sick_scan_services.h"
+#include "abstract_parser.h"
 
 #define RETURN_ERROR_ON_RESPONSE_TIMEOUT(result,reply) if(((result)!=ExitSuccess)&&((reply).empty()))return(ExitError)
 
@@ -389,7 +390,7 @@ namespace sick_scan_xd
     m_min_intensity = 0.0; // Set range of LaserScan messages to infinity, if intensity < min_intensity (default: 0)
 
     setSensorIsRadar(false);
-    init_cmdTables(nh);
+    init_cmdTables();
 #if defined USE_DYNAMIC_RECONFIGURE && __ROS_VERSION == 1
     dynamic_reconfigure::Server<sick_scan_xd::SickScanConfig>::CallbackType f;
     // f = boost::bind(&sick_scan_xd::SickScanCommon::update_config, this, _1, _2);
@@ -420,146 +421,146 @@ namespace sick_scan_xd
     }
 #endif
 
-    std::string nodename = parser_->getCurrentParamPtr()->getScannerName();
-    rosDeclareParam(nh, "nodename", nodename);
-    rosGetParam(nh, "nodename", nodename);
+    // std::string nodename = parser_->getCurrentParamPtr()->getScannerName();
+    // rosDeclareParam(nh, "nodename", nodename);
+    // rosGetParam(nh, "nodename", nodename);
 
-    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_31X_NAME) == 0)
-    {
-      // NAV-310 only supports min/max angles of -PI to +PI (resp. 0 to 360 degree in sensor coordinates). To avoid unexpected results, min/max angles can not be set by configuration.
-      config_.min_ang = -M_PI;
-      config_.max_ang = +M_PI;
-    }
+    // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_31X_NAME) == 0)
+    // {
+    //   // NAV-310 only supports min/max angles of -PI to +PI (resp. 0 to 360 degree in sensor coordinates). To avoid unexpected results, min/max angles can not be set by configuration.
+    //   config_.min_ang = -M_PI;
+    //   config_.max_ang = +M_PI;
+    // }
 
     // datagram publisher (only for debug)
-    rosDeclareParam(nh, "publish_datagram", false);
-    if(rosGetParam(nh, "publish_datagram", publish_datagram_))
-    if (publish_datagram_)
-    {
-        datagram_pub_ = rosAdvertise<ros_std_msgs::String>(nh, nodename + "/datagram", 1000);
-    }
-    rosDeclareParam(nh, "cloud_topic", cloud_topic_val);
-    rosGetParam(nh, "cloud_topic", cloud_topic_val);
+    // rosDeclareParam(nh, "publish_datagram", false);
+    // if(rosGetParam(nh, "publish_datagram", publish_datagram_))
+    // if (publish_datagram_)
+    // {
+    //     datagram_pub_ = rosAdvertise<ros_std_msgs::String>(nh, nodename + "/datagram", 1000);
+    // }
+    // rosDeclareParam(nh, "cloud_topic", cloud_topic_val);
+    // rosGetParam(nh, "cloud_topic", cloud_topic_val);
 
-    std::string laserscan_topic = nodename + "/scan";
-    rosDeclareParam(nh, "laserscan_topic", laserscan_topic);
-    rosGetParam(nh, "laserscan_topic", laserscan_topic);
+    // std::string laserscan_topic = nodename + "/scan";
+    // rosDeclareParam(nh, "laserscan_topic", laserscan_topic);
+    // rosGetParam(nh, "laserscan_topic", laserscan_topic);
 
-    rosDeclareParam(nh, "frame_id", config_.frame_id);
-    rosGetParam(nh, "frame_id", config_.frame_id);
+    // rosDeclareParam(nh, "frame_id", config_.frame_id);
+    // rosGetParam(nh, "frame_id", config_.frame_id);
 
-    rosDeclareParam(nh, "imu_frame_id", config_.imu_frame_id);
-    rosGetParam(nh, "imu_frame_id", config_.imu_frame_id);
+    // rosDeclareParam(nh, "imu_frame_id", config_.imu_frame_id);
+    // rosGetParam(nh, "imu_frame_id", config_.imu_frame_id);
 
-    rosDeclareParam(nh, "intensity", config_.intensity);
-    rosGetParam(nh, "intensity", config_.intensity);
+    // rosDeclareParam(nh, "intensity", config_.intensity);
+    // rosGetParam(nh, "intensity", config_.intensity);
 
-    rosDeclareParam(nh, "auto_reboot", config_.auto_reboot);
-    rosGetParam(nh, "auto_reboot", config_.auto_reboot);
+    // rosDeclareParam(nh, "auto_reboot", config_.auto_reboot);
+    // rosGetParam(nh, "auto_reboot", config_.auto_reboot);
 
-    rosDeclareParam(nh, "min_ang", config_.min_ang);
-    rosGetParam(nh, "min_ang", config_.min_ang);
+    // rosDeclareParam(nh, "min_ang", config_.min_ang);
+    // rosGetParam(nh, "min_ang", config_.min_ang);
 
-    rosDeclareParam(nh, "max_ang", config_.max_ang);
-    rosGetParam(nh, "max_ang", config_.max_ang);
+    // rosDeclareParam(nh, "max_ang", config_.max_ang);
+    // rosGetParam(nh, "max_ang", config_.max_ang);
 
-    rosDeclareParam(nh, "ang_res", config_.ang_res);
-    rosGetParam(nh, "ang_res", config_.ang_res);
+    // rosDeclareParam(nh, "ang_res", config_.ang_res);
+    // rosGetParam(nh, "ang_res", config_.ang_res);
 
-    rosDeclareParam(nh, "skip", config_.skip);
-    rosGetParam(nh, "skip", config_.skip);
+    // rosDeclareParam(nh, "skip", config_.skip);
+    // rosGetParam(nh, "skip", config_.skip);
 
-    rosDeclareParam(nh, "sw_pll_only_publish", config_.sw_pll_only_publish);
-    rosGetParam(nh, "sw_pll_only_publish", config_.sw_pll_only_publish);
+    // rosDeclareParam(nh, "sw_pll_only_publish", config_.sw_pll_only_publish);
+    // rosGetParam(nh, "sw_pll_only_publish", config_.sw_pll_only_publish);
 
-    rosDeclareParam(nh, "use_generation_timestamp", config_.use_generation_timestamp);
-    rosGetParam(nh, "use_generation_timestamp", config_.use_generation_timestamp);
-    if(config_.use_generation_timestamp == 0)
-      ROS_INFO_STREAM("use_generation_timestamp:=0, using lidar send timestamp instead of generation timestamp for software pll converted message timestamp.");
+    // rosDeclareParam(nh, "use_generation_timestamp", config_.use_generation_timestamp);
+    // rosGetParam(nh, "use_generation_timestamp", config_.use_generation_timestamp);
+    // if(config_.use_generation_timestamp == 0)
+    //   ROS_INFO_STREAM("use_generation_timestamp:=0, using lidar send timestamp instead of generation timestamp for software pll converted message timestamp.");
 
-    rosDeclareParam(nh, "time_offset", config_.time_offset);
-    rosGetParam(nh, "time_offset", config_.time_offset);
+    // rosDeclareParam(nh, "time_offset", config_.time_offset);
+    // rosGetParam(nh, "time_offset", config_.time_offset);
 
-    rosDeclareParam(nh, "cloud_output_mode", config_.cloud_output_mode);
-    rosGetParam(nh, "cloud_output_mode", config_.cloud_output_mode);
+    // rosDeclareParam(nh, "cloud_output_mode", config_.cloud_output_mode);
+    // rosGetParam(nh, "cloud_output_mode", config_.cloud_output_mode);
 
-    double expected_frequency_tolerance = 0.1; // frequency should be target +- 10%
-    rosDeclareParam(nh, "expected_frequency_tolerance", expected_frequency_tolerance);
-    rosGetParam(nh, "expected_frequency_tolerance", expected_frequency_tolerance);
+    // double expected_frequency_tolerance = 0.1; // frequency should be target +- 10%
+    // rosDeclareParam(nh, "expected_frequency_tolerance", expected_frequency_tolerance);
+    // rosGetParam(nh, "expected_frequency_tolerance", expected_frequency_tolerance);
 
-    m_read_timeout_millisec_default = READ_TIMEOUT_MILLISEC_DEFAULT;
-    m_read_timeout_millisec_startup = READ_TIMEOUT_MILLISEC_STARTUP;
+    // m_read_timeout_millisec_default = READ_TIMEOUT_MILLISEC_DEFAULT;
+    // m_read_timeout_millisec_startup = READ_TIMEOUT_MILLISEC_STARTUP;
 
-    rosDeclareParam(nh, "read_timeout_millisec_default", m_read_timeout_millisec_default);
-    rosGetParam(nh, "read_timeout_millisec_default", m_read_timeout_millisec_default);
+    // rosDeclareParam(nh, "read_timeout_millisec_default", m_read_timeout_millisec_default);
+    // rosGetParam(nh, "read_timeout_millisec_default", m_read_timeout_millisec_default);
 
-    rosDeclareParam(nh, "read_timeout_millisec_startup", m_read_timeout_millisec_startup);
-    rosGetParam(nh, "read_timeout_millisec_startup", m_read_timeout_millisec_startup);
+    // rosDeclareParam(nh, "read_timeout_millisec_startup", m_read_timeout_millisec_startup);
+    // rosGetParam(nh, "read_timeout_millisec_startup", m_read_timeout_millisec_startup);
 
-    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_31X_NAME) == 0)
-    {
-      // NAV-310 only supports min/max angles of -PI to +PI (resp. 0 to 360 degree in sensor coordinates). To avoid unexpected results, min/max angles can not be set by configuration.
-      if(std::abs(config_.min_ang + M_PI) > FLT_EPSILON || std::abs(config_.max_ang - M_PI) > FLT_EPSILON)
-      {
-        ROS_WARN_STREAM("## WARNING: configured min/max_angle = " << config_.min_ang << "," << config_.max_ang << " not supported by NAV-3xx. min/max_angle = -PI,+PI will be used.");
-        config_.min_ang = -M_PI;
-        config_.max_ang = +M_PI;
-      }
-    }
+    // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_31X_NAME) == 0)
+    // {
+    //   // NAV-310 only supports min/max angles of -PI to +PI (resp. 0 to 360 degree in sensor coordinates). To avoid unexpected results, min/max angles can not be set by configuration.
+    //   if(std::abs(config_.min_ang + M_PI) > FLT_EPSILON || std::abs(config_.max_ang - M_PI) > FLT_EPSILON)
+    //   {
+    //     ROS_WARN_STREAM("## WARNING: configured min/max_angle = " << config_.min_ang << "," << config_.max_ang << " not supported by NAV-3xx. min/max_angle = -PI,+PI will be used.");
+    //     config_.min_ang = -M_PI;
+    //     config_.max_ang = +M_PI;
+    //   }
+    // }
 
     publish_nav_pose_data_ = false;
     publish_nav_landmark_data_ = false;
     nav_tf_parent_frame_id_ = "map";
     nav_tf_child_frame_id_ = "nav";
-    rosDeclareParam(nh, "nav_tf_parent_frame_id", nav_tf_parent_frame_id_);
-    rosGetParam(nh, "nav_tf_parent_frame_id", nav_tf_parent_frame_id_);
-    rosDeclareParam(nh, "nav_tf_child_frame_id", nav_tf_child_frame_id_);
-    rosGetParam(nh, "nav_tf_child_frame_id", nav_tf_child_frame_id_);
+    // rosDeclareParam(nh, "nav_tf_parent_frame_id", nav_tf_parent_frame_id_);
+    // rosGetParam(nh, "nav_tf_parent_frame_id", nav_tf_parent_frame_id_);
+    // rosDeclareParam(nh, "nav_tf_child_frame_id", nav_tf_child_frame_id_);
+    // rosGetParam(nh, "nav_tf_child_frame_id", nav_tf_child_frame_id_);
 
-    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_350_NAME) == 0)
-    {
-      nav_pose_data_pub_ = rosAdvertise<sick_scan_msg::NAVPoseData>(nh, nodename + "/nav_pose", 100);
-      nav_landmark_data_pub_ = rosAdvertise<sick_scan_msg::NAVLandmarkData>(nh, nodename + "/nav_landmark", 100);
-      nav_reflector_pub_ = rosAdvertise<ros_visualization_msgs::MarkerArray>(nh, nodename + "/nav_reflectors", 100);
-      publish_nav_pose_data_ = true;
-      publish_nav_landmark_data_ = true;
-#if defined __ROS_VERSION && __ROS_VERSION == 1
-      nav_tf_broadcaster_ = new tf2_ros::TransformBroadcaster();
-      nav_odom_velocity_subscriber_ = nh->subscribe("nav_odom_velocity", 1, &sick_scan_xd::SickScanCommon::messageCbNavOdomVelocity, this);
-      ros_odom_subscriber_ = nh->subscribe("odom", 1, &sick_scan_xd::SickScanCommon::messageCbRosOdom, this);
-#elif defined __ROS_VERSION && __ROS_VERSION == 2
-      nav_tf_broadcaster_ = new tf2_ros::TransformBroadcaster(nh);
-      nav_odom_velocity_subscriber_ = nh->create_subscription<sick_scan_msg::NAVOdomVelocity>("nav_odom_velocity", 10, std::bind(&sick_scan_xd::SickScanCommon::messageCbNavOdomVelocityROS2, this, std::placeholders::_1));
-      ros_odom_subscriber_ = nh->create_subscription<ros_nav_msgs::Odometry>("odom", 10, std::bind(&sick_scan_xd::SickScanCommon::messageCbRosOdomROS2, this, std::placeholders::_1));
-#endif
-    }
+//     if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_350_NAME) == 0)
+//     {
+//       nav_pose_data_pub_ = rosAdvertise<sick_scan_msg::NAVPoseData>(nh, nodename + "/nav_pose", 100);
+//       nav_landmark_data_pub_ = rosAdvertise<sick_scan_msg::NAVLandmarkData>(nh, nodename + "/nav_landmark", 100);
+//       nav_reflector_pub_ = rosAdvertise<ros_visualization_msgs::MarkerArray>(nh, nodename + "/nav_reflectors", 100);
+//       publish_nav_pose_data_ = true;
+//       publish_nav_landmark_data_ = true;
+// #if defined __ROS_VERSION && __ROS_VERSION == 1
+//       nav_tf_broadcaster_ = new tf2_ros::TransformBroadcaster();
+//       nav_odom_velocity_subscriber_ = nh->subscribe("nav_odom_velocity", 1, &sick_scan_xd::SickScanCommon::messageCbNavOdomVelocity, this);
+//       ros_odom_subscriber_ = nh->subscribe("odom", 1, &sick_scan_xd::SickScanCommon::messageCbRosOdom, this);
+// #elif defined __ROS_VERSION && __ROS_VERSION == 2
+//       nav_tf_broadcaster_ = new tf2_ros::TransformBroadcaster(nh);
+//       nav_odom_velocity_subscriber_ = nh->create_subscription<sick_scan_msg::NAVOdomVelocity>("nav_odom_velocity", 10, std::bind(&sick_scan_xd::SickScanCommon::messageCbNavOdomVelocityROS2, this, std::placeholders::_1));
+//       ros_odom_subscriber_ = nh->create_subscription<ros_nav_msgs::Odometry>("odom", 10, std::bind(&sick_scan_xd::SickScanCommon::messageCbRosOdomROS2, this, std::placeholders::_1));
+// #endif
+//     }
 
-    cloud_marker_ = 0;
+    // cloud_marker_ = 0;
     publish_lferec_ = false;
     publish_lidoutputstate_ = false;
-    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
-    {
-      lferec_pub_ = rosAdvertise<sick_scan_msg::LFErecMsg>(nh, nodename + "/lferec", 100);
-      lidoutputstate_pub_ = rosAdvertise<sick_scan_msg::LIDoutputstateMsg>(nh, nodename + "/lidoutputstate", 100);
-      publish_lferec_ = true;
-      publish_lidoutputstate_ = true;
-      cloud_marker_ = new sick_scan_xd::SickScanMarker(nh, nodename + "/marker", config_.frame_id); // "cloud");
-    }
+    // if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
+    // {
+    //   lferec_pub_ = rosAdvertise<sick_scan_msg::LFErecMsg>(nh, nodename + "/lferec", 100);
+    //   lidoutputstate_pub_ = rosAdvertise<sick_scan_msg::LIDoutputstateMsg>(nh, nodename + "/lidoutputstate", 100);
+    //   publish_lferec_ = true;
+    //   publish_lidoutputstate_ = true;
+    //   cloud_marker_ = new sick_scan_xd::SickScanMarker(nh, nodename + "/marker", config_.frame_id); // "cloud");
+    // }
 
     // Pointcloud2 publisher
-    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_SCANSEGMENT_XD_NAME) != 0
-     && parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_PICOSCAN_NAME) != 0)
-    {
-      ROS_INFO_STREAM("Publishing lidar pointcloud2 to " << cloud_topic_val);
-      cloud_pub_ = rosAdvertise<ros_sensor_msgs::PointCloud2>(nh, cloud_topic_val, 100);
+    // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_SCANSEGMENT_XD_NAME) != 0
+    //  && parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_PICOSCAN_NAME) != 0)
+    // {
+    //   ROS_INFO_STREAM("Publishing lidar pointcloud2 to " << cloud_topic_val);
+    //   cloud_pub_ = rosAdvertise<ros_sensor_msgs::PointCloud2>(nh, cloud_topic_val, 100);
 
-      imuScan_pub_ = rosAdvertise<ros_sensor_msgs::Imu>(nh, nodename + "/imu", 100);
+    //   imuScan_pub_ = rosAdvertise<ros_sensor_msgs::Imu>(nh, nodename + "/imu", 100);
 
-      Encoder_pub = rosAdvertise<sick_scan_msg::Encoder>(nh, nodename + "/encoder", 100);
-    }
+    //   Encoder_pub = rosAdvertise<sick_scan_msg::Encoder>(nh, nodename + "/encoder", 100);
+    // }
 
     // scan publisher
-    pub_ = rosAdvertise<ros_sensor_msgs::LaserScan>(nh, laserscan_topic, 1000);
+    // pub_ = rosAdvertise<ros_sensor_msgs::LaserScan>(nh, laserscan_topic, 1000);
 
 #if defined USE_DIAGNOSTIC_UPDATER
     if(diagnostics_)
@@ -600,7 +601,7 @@ namespace sick_scan_xd
     // add_transform_xyz_rpy := T[world,cloud] with parent "world" and child "cloud", i.e. P_world = T[world,cloud] * P_cloud
     // The additional transform applies to cartesian lidar pointclouds and visualization marker (fields)
     // It is NOT applied to polar pointclouds, radarscans, ldmrs objects or other messages
-    m_add_transform_xyz_rpy = sick_scan_xd::SickCloudTransform(nh, false);
+    // m_add_transform_xyz_rpy = sick_scan_xd::SickCloudTransform(nh, false);
   }
 
   /*!
@@ -610,8 +611,8 @@ namespace sick_scan_xd
   std::string SickScanCommon::cmdSetAccessMode3(void)
   {
     std::string set_access_mode_3 = sopasCmdVec[CMD_SET_ACCESS_MODE_3]; // "sMN SetAccessMode 3 F4724744"
-    if (parser_->getCurrentParamPtr()->getUseSafetyPasWD()) // TIM_7xxS - 1 layer Safety Scanner
-      set_access_mode_3 = sopasCmdVec[CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER]; // "\x02sMN SetAccessMode 3 6FD62C05\x03\0"
+    // if (parser_->getCurrentParamPtr()->getUseSafetyPasWD()) // TIM_7xxS - 1 layer Safety Scanner
+    //   set_access_mode_3 = sopasCmdVec[CMD_SET_ACCESS_MODE_3_SAFETY_SCANNER]; // "\x02sMN SetAccessMode 3 6FD62C05\x03\0"
     return set_access_mode_3;
   }
 
@@ -625,24 +626,24 @@ namespace sick_scan_xd
      * Stop streaming measurements
      */
     std::vector<std::string> sopas_stop_scanner_cmd = { "\x02sEN LMDscandata 0\x03\0" };
-    if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
-    {
-      sopas_stop_scanner_cmd.push_back("\x02sEN LFErec 0\x03"); // TiM781S: deactivate LFErec messages, send "sEN LFErec 0"
-      sopas_stop_scanner_cmd.push_back("\x02sEN LIDoutputstate 0\x03"); // TiM781S: deactivate LIDoutputstate messages, send "sEN LIDoutputstate 0"
-      sopas_stop_scanner_cmd.push_back("\x02sEN LIDinputstate 0\x03"); // TiM781S: deactivate LIDinputstate messages, send "sEN LIDinputstate 0"
-    }
-    sopas_stop_scanner_cmd.push_back(cmdSetAccessMode3()); // "sMN SetAccessMode 3 F4724744"
+    // if (parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_TIM7XX_LOGIC || parser_->getCurrentParamPtr()->getUseEvalFields() == USE_EVAL_FIELD_LMS5XX_LOGIC)
+    // {
+    //   sopas_stop_scanner_cmd.push_back("\x02sEN LFErec 0\x03"); // TiM781S: deactivate LFErec messages, send "sEN LFErec 0"
+    //   sopas_stop_scanner_cmd.push_back("\x02sEN LIDoutputstate 0\x03"); // TiM781S: deactivate LIDoutputstate messages, send "sEN LIDoutputstate 0"
+    //   sopas_stop_scanner_cmd.push_back("\x02sEN LIDinputstate 0\x03"); // TiM781S: deactivate LIDinputstate messages, send "sEN LIDinputstate 0"
+    // }
+    sopas_stop_scanner_cmd.push_back(this->cmdSetAccessMode3()); // "sMN SetAccessMode 3 F4724744"
     sopas_stop_scanner_cmd.push_back("\x02sMN LMCstopmeas\x03\0");
-    // sopas_stop_scanner_cmd.push_back("\x02sMN Run\x03\0");
-    if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_350_NAME) == 0)
-    {
-      sopas_stop_scanner_cmd.clear();
-      sopas_stop_scanner_cmd.push_back(cmdSetAccessMode3()); // "sMN SetAccessMode 3 F4724744"
-      sopas_stop_scanner_cmd.push_back(sopasCmdVec[CMD_SET_NAV_OPERATIONAL_MODE_1]); // "sMN mNEVAChangeState 1", 1 = standby
-      sopas_stop_scanner_cmd.push_back(sopasCmdVec[CMD_SET_NAV_OPERATIONAL_MODE_0]); // "sMN mNEVAChangeState 0", 0 = power down
-    }
+    // // sopas_stop_scanner_cmd.push_back("\x02sMN Run\x03\0");
+    // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_NAV_350_NAME) == 0)
+    // {
+    //   sopas_stop_scanner_cmd.clear();
+    //   sopas_stop_scanner_cmd.push_back(cmdSetAccessMode3()); // "sMN SetAccessMode 3 F4724744"
+    //   sopas_stop_scanner_cmd.push_back(sopasCmdVec[CMD_SET_NAV_OPERATIONAL_MODE_1]); // "sMN mNEVAChangeState 1", 1 = standby
+    //   sopas_stop_scanner_cmd.push_back(sopasCmdVec[CMD_SET_NAV_OPERATIONAL_MODE_0]); // "sMN mNEVAChangeState 0", 0 = power down
+    // }
 
-    setReadTimeOutInMs(1000);
+    this->setReadTimeOutInMs(1000);
     ROS_INFO_STREAM("sick_scan_common: stopping scanner ...");
     int result = ExitSuccess, cmd_result = ExitSuccess;
     for(int cmd_idx = 0; cmd_idx < sopas_stop_scanner_cmd.size(); cmd_idx++)
@@ -4192,7 +4193,7 @@ namespace sick_scan_xd
   \brief parsing datagram and publishing ros messages
   \return error code
   */
-  int SickScanCommon::loopOnce(rosNodePtr nh)
+  int SickScanCommon::loopOnce()
   {
     //static int cnt = 0;
 #ifdef USE_DIAGNOSTIC_UPDATER
@@ -4238,11 +4239,11 @@ namespace sick_scan_xd
     {
 
       /* Dump Binary Protocol */
-        rosDeclareParam(nh, "slam_echo", echoForSlam);
-        rosGetParam(nh, "slam_echo", echoForSlam);
+        // rosDeclareParam(nh, "slam_echo", echoForSlam);
+        // rosGetParam(nh, "slam_echo", echoForSlam);
 
-        rosDeclareParam(nh, "slam_bundle", slamBundle);
-        rosGetParam(nh, "slam_bundle", slamBundle);
+        // rosDeclareParam(nh, "slam_bundle", slamBundle);
+        // rosGetParam(nh, "slam_bundle", slamBundle);
 
       firstTimeCalled = false;
     }
@@ -4252,7 +4253,7 @@ namespace sick_scan_xd
         "LMDscandata", "LMDscandatamon", "mNPOSGetData",
         "LMDradardata", "InertialMeasurementUnit", "LIDoutputstate", "LIDinputstate", "LFErec" };
 
-      int result = get_datagram(nh, recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol, &packetsInLoop, datagram_keywords);
+      int result = get_datagram(recvTimeStamp, receiveBuffer, 65536, &actual_length, useBinaryProtocol, &packetsInLoop, datagram_keywords);
       numPacketsProcessed++;
 
       rosDuration dur = recvTimeStampPush - recvTimeStamp;
@@ -4278,12 +4279,12 @@ namespace sick_scan_xd
       }
       ROS_DEBUG_STREAM("SickScanCommon::loopOnce: received " << actual_length << " byte data " << DataDumper::binDataToAsciiString(&receiveBuffer[0], std::min<int>(32, actual_length)) << " ... ");
 
-      if (publish_datagram_)
-      {
-        ros_std_msgs::String datagram_msg;
-        datagram_msg.data = std::string(reinterpret_cast<char *>(receiveBuffer));
-        rosPublish(datagram_pub_, datagram_msg);
-      }
+      // if (publish_datagram_)
+      // {
+      //   ros_std_msgs::String datagram_msg;
+      //   datagram_msg.data = std::string(reinterpret_cast<char *>(receiveBuffer));
+      //   rosPublish(datagram_pub_, datagram_msg);
+      // }
 
 
       if (verboseLevel > 0)
@@ -4292,16 +4293,16 @@ namespace sick_scan_xd
       }
 
 
-      if (true == this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
-      {
-        SickScanRadarSingleton *radar = SickScanRadarSingleton::getInstance(nh);
-        radar->setNameOfRadar(this->parser_->getCurrentParamPtr()->getScannerName(), this->parser_->getCurrentParamPtr()->getDeviceRadarType());
-        int errorCode = ExitSuccess;
-        // parse radar telegram and send pointcloud2-debug messages
-        errorCode = radar->parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
-                                         useBinaryProtocol);
-        return errorCode; // return success to continue looping
-      }
+      // if (true == this->parser_->getCurrentParamPtr()->getDeviceIsRadar())
+      // {
+      //   SickScanRadarSingleton *radar = SickScanRadarSingleton::getInstance(nh);
+      //   radar->setNameOfRadar(this->parser_->getCurrentParamPtr()->getScannerName(), this->parser_->getCurrentParamPtr()->getDeviceRadarType());
+      //   int errorCode = ExitSuccess;
+      //   // parse radar telegram and send pointcloud2-debug messages
+      //   errorCode = radar->parseDatagram(recvTimeStamp, (unsigned char *) receiveBuffer, actual_length,
+      //                                    useBinaryProtocol);
+      //   return errorCode; // return success to continue looping
+      // }
 
       static SickScanImu scanImu(this, nh); // todo remove static
       if (scanImu.isImuDatagram((char *) receiveBuffer, actual_length))
@@ -5431,35 +5432,35 @@ namespace sick_scan_xd
       }
       buffer[6] = dummy1 ? 0x01 : 0x00;
       bufferLen = 7;
-      if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0) // activate FEVL and RANG in case of MRS1xxx with firmware version > 1
-      {
-        std::vector<int> version_id = parseFirmwareVersion("MRS1xxx", deviceIdentStr); // Get MRS1xxx version from device ident string
-        if (version_id[0] > 1)
-        {
-          // buffer[6] = 0x01; // MRS1xxx with firmware version > 1 supports RANG+FEVL -> overwrite with "<STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>"
-          // MRS1xxx with firmware version > 1 supports RANG+FEVL -> overwrite with "<STX>sWN{SPC}SetActiveApplications{SPC}2{SPC}FEVL{SPC}1{SPC}RANG{SPC}1<ETX>"
-          // resp. binary "sWN SetActiveApplications \00\02\46\45\56\4C\01\52\41\4e\47\01"
-          uint8_t field_evaluation_status = isFieldEvaluationActive() ? 0x01: 0x00;
-          std::vector<uint8_t> binary_parameter = {0x00, 0x02, 0x46, 0x45, 0x56, 0x4C, field_evaluation_status, 0x52, 0x41, 0x4e, 0x47, 0x01};
-          for (int ii = 0; ii < binary_parameter.size(); ii++)
-            buffer[ii] = binary_parameter[ii];
-          bufferLen = binary_parameter.size();
-        }
-        // Disable scandatacfg_azimuth_table if firmware version is < 2.2
-        if (version_id[0] < 2)
-          parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
-        if (version_id[0] == 2 && version_id[1] < 2)
-          parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
-      }
-      if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
-      {
-        std::vector<int> version_id = parseFirmwareVersion("LMS1xxx", deviceIdentStr); // Get LMS1xxx version from device ident string
-        // Disable scandatacfg_azimuth_table if firmware version is < 2.2
-        if (version_id[0] < 2)
-          parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
-        if (version_id[0] == 2 && version_id[1] < 2)
-          parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
-      }
+      // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_MRS_1XXX_NAME) == 0) // activate FEVL and RANG in case of MRS1xxx with firmware version > 1
+      // {
+      //   std::vector<int> version_id = parseFirmwareVersion("MRS1xxx", deviceIdentStr); // Get MRS1xxx version from device ident string
+      //   if (version_id[0] > 1)
+      //   {
+      //     // buffer[6] = 0x01; // MRS1xxx with firmware version > 1 supports RANG+FEVL -> overwrite with "<STX>sWN{SPC}SetActiveApplications{SPC}1{SPC}FEVL{SPC}1<ETX>"
+      //     // MRS1xxx with firmware version > 1 supports RANG+FEVL -> overwrite with "<STX>sWN{SPC}SetActiveApplications{SPC}2{SPC}FEVL{SPC}1{SPC}RANG{SPC}1<ETX>"
+      //     // resp. binary "sWN SetActiveApplications \00\02\46\45\56\4C\01\52\41\4e\47\01"
+      //     uint8_t field_evaluation_status = isFieldEvaluationActive() ? 0x01: 0x00;
+      //     std::vector<uint8_t> binary_parameter = {0x00, 0x02, 0x46, 0x45, 0x56, 0x4C, field_evaluation_status, 0x52, 0x41, 0x4e, 0x47, 0x01};
+      //     for (int ii = 0; ii < binary_parameter.size(); ii++)
+      //       buffer[ii] = binary_parameter[ii];
+      //     bufferLen = binary_parameter.size();
+      //   }
+      //   // Disable scandatacfg_azimuth_table if firmware version is < 2.2
+      //   if (version_id[0] < 2)
+      //     parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
+      //   if (version_id[0] == 2 && version_id[1] < 2)
+      //     parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
+      // }
+      // if (parser_->getCurrentParamPtr()->getScannerName().compare(SICK_SCANNER_LMS_1XXX_NAME) == 0)
+      // {
+      //   std::vector<int> version_id = parseFirmwareVersion("LMS1xxx", deviceIdentStr); // Get LMS1xxx version from device ident string
+      //   // Disable scandatacfg_azimuth_table if firmware version is < 2.2
+      //   if (version_id[0] < 2)
+      //     parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
+      //   if (version_id[0] == 2 && version_id[1] < 2)
+      //     parser_->getCurrentParamPtr()->setScandatacfgAzimuthTableSupported(false);
+      // }
     }
 
     if (cmdAscii.find(keyWord5) != std::string::npos)
@@ -5855,7 +5856,8 @@ namespace sick_scan_xd
   bool SickScanCommon::checkForProtocolChangeAndMaybeReconnect(bool &useBinaryCmdNow)
   {
     bool retValue = true;
-    bool shouldUseBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+    // bool shouldUseBinary = this->parser_->getCurrentParamPtr()->getUseBinaryProtocol();
+    bool shouldUseBinary = false;
     if (shouldUseBinary == useBinaryCmdNow)
     {
       retValue = true;  // !!!! CHANGE ONLY FOR TEST!!!!!
