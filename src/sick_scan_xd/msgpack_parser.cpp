@@ -82,6 +82,7 @@
 #include "softwarePLL.h"
 // #include "config.h"
 #include "msgpack_parser.h"
+#include "sick_ros_wrapper.h"
 
 /** normalizes an angle to [ -PI , +PI ] */
 static float normalizeAngle(float angle_rad)

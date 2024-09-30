@@ -1,6 +1,4 @@
-#include "sick_scan/sick_scan_base.h" /* Base definitions included in all header files, added by add_sick_scan_base_header.py. Do not edit this line. */
-#ifndef TEMPLATE_QUEUE_H
-#define TEMPLATE_QUEUE_H
+#pragma once
 
 #include <queue>
 #include <thread>
@@ -8,6 +6,7 @@
 #include <iostream>
 #include <mutex>
 #include <condition_variable>
+
 
 template<typename T>
 class Queue
@@ -131,6 +130,5 @@ protected:
   std::list<T> queue_;
   std::mutex mutex_;
   std::condition_variable cond_;
-};
 
-#endif
+};

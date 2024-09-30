@@ -52,8 +52,8 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_UDP_SOCKETS_H
-#define __SICK_SCANSEGMENT_XD_UDP_SOCKETS_H
+
+#pragma once
 
 #if defined WIN32 || defined _MSC_VER
 #ifndef _WINSOCK_DEPRECATED_NO_WARNINGS
@@ -87,7 +87,7 @@ static std::string getErrorMessage(void) { return std::to_string(errno) + " (" +
 #endif
 
 #include "common.h"
-#include "wsa_init.hpp"
+#include "tcp/wsa_init.hpp"
 
 
 namespace sick_scansegment_xd
@@ -187,4 +187,3 @@ namespace sick_scansegment_xd
     };
 
 }   // namespace sick_scansegment_xd
-#endif // __SICK_SCANSEGMENT_XD_UDP_SOCKETS_H

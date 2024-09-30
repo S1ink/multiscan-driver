@@ -5,9 +5,7 @@
 // Mit "-lrt" linken!!
 //
 
-#ifndef TIME_HPP
-#define TIME_HPP
-
+#pragma once
 
 #include "BasicDatatypes.hpp"
 #ifdef WIN32
@@ -82,7 +80,5 @@ private:
 
 	static const double m_secondFractionNTPtoNanoseconds; // = 2^-32 * 1e9
 	static const double m_nanosecondsToSecondFractionNTP;   // = 2^32 * 1e-9
+
 };
-
-
-#endif // TIME_HPP

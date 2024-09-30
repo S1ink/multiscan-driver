@@ -61,6 +61,7 @@
 #include "fifo.h"
 #include "udp_receiver.h"
 #include "udp_sockets.h"
+#include "sick_ros_wrapper.h"
 
 /*
  * Computes the zlib CRC32 checksum, see https://stackoverflow.com/questions/15030011/same-crc32-for-python-and-c

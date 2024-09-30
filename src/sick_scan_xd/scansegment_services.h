@@ -59,15 +59,12 @@
  *
  */
 
-#ifndef SICK_SCAN_SERVICES_H_
-#define SICK_SCAN_SERVICES_H_
-
-#define SCANSEGMENT_XD_SUPPORT 1
+#pragma once
 
 #include <string>
 #include <vector>
 
-#include "sick_scan/sick_scan_common_tcp.h"
+#include "sick_scan_common_tcp.h"
 
 namespace sick_scan_xd
 {
@@ -90,7 +87,6 @@ namespace sick_scan_xd
      */
     bool sendSopasCmdCheckResponse(const std::string& sopas_request, const std::string& expected_response);
 
-#if defined SCANSEGMENT_XD_SUPPORT && SCANSEGMENT_XD_SUPPORT > 0
     /*!
      * Sends the multiScan start commands "sWN ScanDataFormat", "sWN ScanDataPreformatting", "sWN ScanDataEthSettings", "sWN ScanDataEnable 1", "sMN LMCstartmeas", "sMN Run"
      * @param[in] hostname IP address of multiScan136, default 192.168.0.1
@@ -100,7 +96,7 @@ namespace sick_scan_xd
      * @param[in] imu_enable: Imu data transfer enabled
      * @param[in] imu_udp_port: UDP port of imu data (if imu_enable is true)
      */
-    bool sendMultiScanStartCmd(const std::string& hostname, int port, const std::string& scanner_type, int scandataformat, bool imu_enable, int imu_udp_port, int performanceprofilenumber);
+    bool sendMultiScanStartCmd(const std::string& hostname, int port, int scandataformat, bool imu_enable, int imu_udp_port, int performanceprofilenumber);
 
     /*!
      * Sends the multiScan stop commands "sWN ScanDataEnable 0" and "sMN Run"
@@ -115,7 +111,7 @@ namespace sick_scan_xd
     * @param[out] host_LFPlayerFilter LFPlayerFilter settings, default: "0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1", otherwise  "<enabled> <layer0-enabled> <layer1-enabled> <layer2-enabled> ... <layer15-enabled>" with 1 for enabled and 0 for disabled
     * @param[out] msgpack_validator_filter_settings; // filter settings for msgpack validator: required_echos, azimuth_start, azimuth_end. elevation_start, elevation_end, layer_filter
     */
-    bool queryMultiScanFiltersettings(int& host_FREchoFilter, std::string& host_LFPangleRangeFilter, std::string& host_LFPlayerFilter, sick_scansegment_xd::MsgpackValidatorFilterConfig& msgpack_validator_filter_settings, const std::string& scanner_type);
+    // bool queryMultiScanFiltersettings(int& host_FREchoFilter, std::string& host_LFPangleRangeFilter, std::string& host_LFPlayerFilter, sick_scansegment_xd::MsgpackValidatorFilterConfig& msgpack_validator_filter_settings, const std::string& scanner_type);
 
     /*!
     * Sends the SOPAS command to write multiScan136 filter settings (FREchoFilter, LFPangleRangeFilter, host_LFPlayerFilter)
@@ -124,9 +120,8 @@ namespace sick_scan_xd
     * @param[in] host_LFPlayerFilter LFPlayerFilter settings, default: "0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1", otherwise  "<enabled> <layer0-enabled> <layer1-enabled> <layer2-enabled> ... <layer15-enabled>" with 1 for enabled and 0 for disabled
     * @param[in] host_LFPintervalFilter Optionally set LFPintervalFilter to "<enabled> <N>" with 1 for enabled and 0 for disabled and N to reduce output to every N-th scan
     */
-    bool writeMultiScanFiltersettings(int host_FREchoFilter, const std::string& host_LFPangleRangeFilter, const std::string& host_LFPlayerFilter, const std::string& host_LFPintervalFilter, const std::string& scanner_type);
+    // bool writeMultiScanFiltersettings(int host_FREchoFilter, const std::string& host_LFPangleRangeFilter, const std::string& host_LFPlayerFilter, const std::string& host_LFPintervalFilter, const std::string& scanner_type);
 
-#endif // defined SCANSEGMENT_XD_SUPPORT && SCANSEGMENT_XD_SUPPORT > 0
 
     /*!
      * Sends a sopas command and returns the lidar reply.
@@ -144,7 +139,7 @@ namespace sick_scan_xd
     * convertHexStringToFloat("C0490FF9", true) returns -3.14
     * convertHexStringToFloat("3FC90FF9", true) returns +1.57
     */
-    static float convertHexStringToFloat(const std::string& hex_str, bool hexStrIsBigEndian);
+    // static float convertHexStringToFloat(const std::string& hex_str, bool hexStrIsBigEndian);
 
     /*!
     * Converts a float value to hex string (hex_str: 4 byte hex value as string, little or big endian).
@@ -153,17 +148,17 @@ namespace sick_scan_xd
     * convertFloatToHexString(-3.14, true) returns "C0490FDB"
     * convertFloatToHexString(+1.57, true) returns "3FC90FF8"
     */
-    static std::string convertFloatToHexString(float value, bool hexStrIsBigEndian);
+    // static std::string convertFloatToHexString(float value, bool hexStrIsBigEndian);
 
     /*!
     * Converts a hex string coded in 1/10000 deg (hex_str: 4 byte hex value as string, little or big endian) to an angle in [deg] (float).
     */
-    static float convertHexStringToAngleDeg(const std::string& hex_str, bool hexStrIsBigEndian);
+    // static float convertHexStringToAngleDeg(const std::string& hex_str, bool hexStrIsBigEndian);
 
     /*!
     * Converts an angle in [deg] to hex string coded in 1/10000 deg (hex_str: 4 byte hex value as string, little or big endian).
     */
-    static std::string convertAngleDegToHexString(float angle_deg, bool hexStrIsBigEndian);
+    // static std::string convertAngleDegToHexString(float angle_deg, bool hexStrIsBigEndian);
 
   protected:
 
@@ -183,4 +178,3 @@ namespace sick_scan_xd
   }; /* class SickScanServices */
 
 } /* namespace sick_scan_xd */
-#endif /* SICK_SCAN_SERVICES_H_ */

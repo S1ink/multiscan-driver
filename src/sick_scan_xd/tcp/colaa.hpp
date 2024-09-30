@@ -4,15 +4,14 @@
 // (c) 2011 SICK AG, Hamburg, Germany
 //
 
-#ifndef COLAA_HPP
-#define COLAA_HPP
+#pragma once
 
 #include "BasicDatatypes.hpp"
 
 /**
- * Parser functions for a partly implementation of the CoLa-A
- * protocol, needed for communication with SICK sensors.
- */
+    * Parser functions for a partly implementation of the CoLa-A
+    * protocol, needed for communication with SICK sensors.
+    */
 namespace colaa
 {
 
@@ -71,7 +70,7 @@ template<typename T>
 inline T read (const std::string& str)
 {
 //	BOOST_STATIC_ASSERT(sizeof(T) == 0); // must not be instantiated
-	return T(); // to avoid additional compiler errors
+    return T(); // to avoid additional compiler errors
 }
 template<> inline double read<double>(const std::string& rxData) { return decodeReal(rxData); }
 template<> inline INT16 read<INT16>(const std::string& rxData) { return decodeINT16(rxData); }
@@ -97,4 +96,3 @@ template<> inline std::string read<std::string>(const std::string& rxData) { ret
 //UINT32 decodeXByte(tokenizer::const_iterator& tok, const tokenizer::const_iterator& end, UINT16 len);
 
 } // END namespace colaa
-#endif

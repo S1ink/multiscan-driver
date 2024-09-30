@@ -11,10 +11,7 @@
 //			Initial version.
 //
 
-
-
-#ifndef TCP_HPP
-#define TCP_HPP
+#pragma once
 
 #include "BasicDatatypes.hpp"
 #ifdef _MSC_VER
@@ -88,5 +85,3 @@ private:
 
 	uint64_t m_last_tcp_msg_received_nsec; // timestamp in nanoseconds of the last received tcp message (or 0 if no message received)
 };
-
-#endif // TCP_HPP

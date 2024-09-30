@@ -8,6 +8,7 @@
 #include "errorhandler.hpp"
 #include "toolbox.hpp"
 #include "wsa_init.hpp"
+#include "../sick_ros_wrapper.h"
 #include <stdio.h>      // for sprintf()
 
 #ifdef _MSC_VER
@@ -23,6 +24,7 @@
 #include <sys/poll.h>
 #include <poll.h>
 #endif
+
 
 Tcp::Tcp()
 {
@@ -340,7 +342,7 @@ INT32 Tcp::readInputData()
 				m_rxBuffer.push_back(inBuffer[i]);
 			}
 		}
-	    m_last_tcp_msg_received_nsec = rosNanosecTimestampNow(); // timestamp in nanoseconds of the last received tcp message (or 0 if no message received)
+	    m_last_tcp_msg_received_nsec = ::rosNanosecTimestampNow(); // timestamp in nanoseconds of the last received tcp message (or 0 if no message received)
 		
 	}
 	else if (recvMsgSize == 0)

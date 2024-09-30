@@ -58,20 +58,18 @@
 #include <stdlib.h>
 #include <string.h>
 
-#undef NOMINMAX // to get rid off warning C4005: "NOMINMAX": Makro-Neudefinition
+// #undef NOMINMAX // to get rid off warning C4005: "NOMINMAX": Makro-Neudefinition
 
 #include "tcp/Mutex.hpp"
 
 #include "sick_scan_common_nw.h"
-// #include "sick_scan_common.h"
 #include "sick_ros_wrapper.h"
-// #include "sick_generic_parser.h"
 #include "template_queue.h"
 
 namespace sick_scan_xd
 {
-/* class prepared for optimized time stamping */
 
+/* class prepared for optimized time stamping */
 class DatagramWithTimeStamp
 {
 public:
@@ -232,8 +230,6 @@ public:
     int getProtocolType(void);
     void setProtocolType(SopasProtocol cola_dialect_id);
 
-    bool stopScanData(bool force_immediate_shutdown = false);
-
     int numberOfDatagramInInputFifo();
 
     SopasEventMessage findFrameInReceiveBuffer();
@@ -250,7 +246,7 @@ public:
      * @param requestStr sent request string
      * @return Expected answer
      */
-    std::vector<std::string> generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
+    static std::vector<std::string> generateExpectedAnswerString(const std::vector<unsigned char> requestStr);
 
     /**
      * \brief Converts a given SOPAS command from ascii to binary (in case of binary communication), sends sopas (ascii or binary) and returns the response (if wait_for_reply:=true)
@@ -258,8 +254,10 @@ public:
      * \param [in] cmdLen Length of the Comandstring in bytes used for Binary Mode only
      */
     // int convertSendSOPASCommand(const std::string& sopas_ascii_request, std::vector<unsigned char>* reply, bool wait_for_reply = true);
-    int convertAscii2BinaryCmd(const char *requestAscii, std::vector<unsigned char> *requestBinary);
-    void setLengthAndCRCinBinarySopasRequest(std::vector<uint8_t>* requestBinary);
+    static int convertAscii2BinaryCmd(const char *requestAscii, std::vector<unsigned char> *requestBinary);
+    static void setLengthAndCRCinBinarySopasRequest(std::vector<uint8_t>* requestBinary);
+
+    static std::string getSopasCmdKeyword(const uint8_t* sopasRequest, int requestLength);
 
     int sendSopasAndCheckAnswer(std::string request, std::vector<unsigned char> *reply, int cmdId = -1);
     int sendSopasAndCheckAnswer(std::vector<unsigned char> request, std::vector<unsigned char> *reply, int cmdId = -1);
@@ -269,21 +267,21 @@ public:
      * \param [in] reply reply from sendSOPASCommand
      * \returns reply as string with special characters stripped out
      */
-    std::string sopasReplyToString(const std::vector<unsigned char> &reply);
+    static std::string sopasReplyToString(const std::vector<unsigned char> &reply);
 
     /**
     * \param [in] *vecArr to (unsigned) char buffer in big endian byte oder (MSB first)
     *
     * \returns    unsigned long value as interpretation of big endian long value
     */
-    unsigned long convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr);
+    static unsigned long convertBigEndianCharArrayToUnsignedLong(const unsigned char *vecArr);
 
     /**
     * \param [in] reply check reply whether is SOPAS-ASCII or SOPAS-Binary
     *
     * \returns    -1 if ascii otherwise the length of data content following offset 8
     */
-    int checkForBinaryAnswer(const std::vector<unsigned char> *reply);
+    static int checkForBinaryAnswer(const std::vector<unsigned char> *reply);
 
     SickScanCommonNw m_nw;
     Queue<DatagramWithTimeStamp> recvQueue;
@@ -331,6 +329,7 @@ private:
     int timelimit_;
     int m_replyMode;
 
+    int readTimeOutInMs;
     std::mutex sopasSendMutex; // mutex to lock sendSopasAndCheckAnswer
     int m_read_timeout_millisec_default = 5000;
     int m_read_timeout_millisec_startup = 120000;
@@ -339,8 +338,7 @@ private:
     {
         ScanLayerFilterCfg(const std::string& parameter = "") // parameter for ScanLayerFilter, e.g. "4 1 1 1 1"
         {
-            if (!parameter.empty())
-            parse(parameter);
+            if (!parameter.empty()) parse(parameter);
         }
 
         std::string scan_layer_filter = ""; // Optional ScanLayerFilter setting from launchfile
@@ -351,7 +349,7 @@ private:
         int num_active_layers = 0;
 
         void parse(const std::string& parameter);   // TODO
-        void print();
+        // void print();
     };
 
 };

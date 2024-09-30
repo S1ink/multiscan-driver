@@ -52,8 +52,8 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_FIFO_H
-#define __SICK_SCANSEGMENT_XD_FIFO_H
+
+#pragma once
 
 #include <chrono>
 #include <condition_variable>
@@ -194,4 +194,3 @@ namespace sick_scansegment_xd
     };
 
 } // namespace sick_scansegment_xd
-#endif // __SICK_SCANSEGMENT_XD_FIFO_H

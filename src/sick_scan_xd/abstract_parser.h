@@ -1,4 +1,3 @@
-#include "sick_scan/sick_scan_base.h" /* Base definitions included in all header files, added by add_sick_scan_base_header.py. Do not edit this line. */
 /*
  * Copyright (C) 2013, Osnabrueck University
  * All rights reserved.
@@ -33,8 +32,7 @@
  *
  */
 
-#ifndef ABSTRACT_PARSER_H_
-#define ABSTRACT_PARSER_H_
+#pragma once
 
 // #include "sick_ros_wrapper.h"
 
@@ -60,4 +58,3 @@ enum ExitCode
   // };
 
 } /* namespace sick_scan_xd */
-#endif /* ABSTRACT_PARSER_H_ */

@@ -1,4 +1,5 @@
 #include "udp_sockets.h"
+#include "sick_ros_wrapper.h"
 
 
 sick_scansegment_xd::UdpReceiverSocketImpl::UdpReceiverSocketImpl() :

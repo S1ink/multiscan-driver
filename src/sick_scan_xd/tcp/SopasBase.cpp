@@ -5,15 +5,21 @@
 //      Author: sick
 //
 
+#include <cassert>
+#include <thread>
+#include <chrono>
+
 #include "SopasBase.hpp"
 // #include "../manager.hpp"
 #include "errorhandler.hpp"
 #include "toolbox.hpp"
 #include "Mutex.hpp"
 
+#define ROS_ERROR(x)
+
 namespace devices
 {
-	
+
 #define SOPASBASE_VERSION "1.0.0"
 
 const std::string SopasBase::EVENTNAME_SUBSCRIBE_EVALCASES("LFErec");
@@ -123,7 +129,7 @@ bool SopasBase::connect()
 {
 	printInfoMessage("SopasBase::connect: Called.", m_beVerbose);
 	
-	assert (m_state == CONSTRUCTED); // must not be opened or running already
+	assert(m_state == CONSTRUCTED); // must not be opened or running already
 
 	// Initialise buffer variables
 	m_numberOfBytesInReceiveBuffer = 0; // Buffer is empty
@@ -672,7 +678,7 @@ bool SopasBase::receiveAnswer_CoLa_A(SopasCommand cmd, UINT16 index, UINT32 time
 		else
 		{
 			// No data in response buffer. Sleep some time and check again
-			usleep(1000);
+			std::this_thread::sleep_for(std::chrono::microseconds(1000));
 		}
 	}
 
@@ -768,7 +774,7 @@ bool SopasBase::receiveAnswer_CoLa_A(SopasCommand cmd, std::string name, UINT32 
 		else
 		{
 			// No data in response buffer. Sleep some time and check again
-			usleep(1000);
+			std::this_thread::sleep_for(std::chrono::microseconds(1000));
 		}
 	}
 
@@ -900,7 +906,7 @@ bool SopasBase::receiveAnswer_CoLa_B(SopasCommand cmd, std::string name, UINT32 
 		else
 		{
 			// No data in response buffer. Sleep some time and check again
-			usleep(1000);
+			std::this_thread::sleep_for(std::chrono::microseconds(1000));
 		}
 	}
 
@@ -1102,7 +1108,7 @@ bool SopasBase::receiveAnswer_CoLa_B(SopasCommand cmd, UINT16 index, UINT32 time
 		else
 		{
 			// No data in response buffer. Sleep some time and check again
-			usleep(1000);
+			std::this_thread::sleep_for(std::chrono::microseconds(1000));
 		}
 	}
 
@@ -2192,7 +2198,7 @@ uint64_t SopasBase::getNanosecTimestampLastTcpMessageReceived(void)
  */
 double SopasBase::makeAngleValid(double angle)
 {
-	return ::normalizeRadians(angle);
+	return ::makeAngleValid(angle);
 }
 
 

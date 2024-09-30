@@ -2,8 +2,8 @@
  * Toolbox. Some useful functions.
  *
  */
-#ifndef TOOLBOX_HPP
-#define TOOLBOX_HPP
+
+#pragma once
 
 #include <stdio.h>      /* for printf() and fprintf() */
 #ifdef _MSC_VER
@@ -92,5 +92,3 @@ void memwrite_UINT16(BYTE*& buffer, UINT16 value);
 void memwrite_INT8(BYTE*& buffer, INT8 value);
 void memwrite_UINT8(BYTE*& buffer, UINT8 value);
 void memwrite_string(BYTE*& buffer, std::string text);
-
-#endif // TOOLBOX_HPP

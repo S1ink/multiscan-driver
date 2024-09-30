@@ -1,8 +1,7 @@
 //
 // SickThread.hpp
 //
-#ifndef SICKTHREAD_HPP
-#define SICKTHREAD_HPP
+#pragma once
 
 #include <thread>
 #include "BasicDatatypes.hpp"
@@ -21,40 +20,40 @@ class ThreadWrapperBase
     std::thread* t_id = 0;
     friend void* wrapper_prerun(void*);
     virtual void thread_entry() = 0;
-  protected:
+protected:
     void* pthis;
-	std::string m_thread_name;
-  public:
-	
-	ThreadWrapperBase(const std::string& thread_name = "") : m_thread_name(thread_name) {pthis = NULL;};
-	virtual ~ThreadWrapperBase() { delete t_id; };
-	  
+    std::string m_thread_name;
+public:
+    
+    ThreadWrapperBase(const std::string& thread_name = "") : m_thread_name(thread_name) {pthis = NULL;};
+    virtual ~ThreadWrapperBase() { delete t_id; };
+    
     void run(void* classptr)
-	{
-		if (pthis == NULL)
-		{
-			pthis = classptr;
-			// pthread_create(&t_id, NULL, wrapper_prerun, this);
-			t_id = new std::thread(&wrapper_prerun, this); 
-		}
+    {
+        if (pthis == NULL)
+        {
+            pthis = classptr;
+            // pthread_create(&t_id, NULL, wrapper_prerun, this);
+            t_id = new std::thread(&wrapper_prerun, this); 
+        }
     }
     
     bool isRunning()
-	{
-		if (pthis == NULL)
-		{
-			return false;
-		}
-		
-		return true;
-	}
-	
+    {
+        if (pthis == NULL)
+        {
+            return false;
+        }
+        
+        return true;
+    }
+    
     void join()
-	{
-		// pthread_join(t_id, NULL);
-		if(t_id && t_id->joinable())
-		    t_id->join();
-		pthis = NULL;
+    {
+        // pthread_join(t_id, NULL);
+        if(t_id && t_id->joinable())
+            t_id->join();
+        pthis = NULL;
     }
     
     // pthread_t* get_thread_id() { return &t_id; }
@@ -87,51 +86,51 @@ class ThreadWrapperBase
 template <typename T, void (T::*M)(bool&, UINT16&)>
 class SickThread : public ThreadWrapperBase
 {
- 	void thread_entry()
- 	{
- 		T* pt = static_cast<T*>(pthis);
+    void thread_entry()
+    {
+        T* pt = static_cast<T*>(pthis);
 
-		m_threadShouldRun = true;
-		bool endThread = false;
-		UINT16 sleepTimeMs = 0;
-		ROS_INFO_STREAM("SickThread " << m_thread_name << " started.");
-		
-		while ((m_threadShouldRun == true) && (endThread == false))
-		{
-			usleep(((UINT32)sleepTimeMs) * 1000);
-			(pt->*M)(endThread, sleepTimeMs);
-		}
+        m_threadShouldRun = true;
+        bool endThread = false;
+        UINT16 sleepTimeMs = 0;
+        ROS_INFO_STREAM("SickThread " << m_thread_name << " started.");
+        
+        while ((m_threadShouldRun == true) && (endThread == false))
+        {
+            usleep(((UINT32)sleepTimeMs) * 1000);
+            (pt->*M)(endThread, sleepTimeMs);
+        }
 
-		ROS_INFO_STREAM("SickThread " << m_thread_name << " finished (flags: threadShouldRun=" << m_threadShouldRun << ", endThread=" << endThread << ").");
- 	}
- 	
-		
+        ROS_INFO_STREAM("SickThread " << m_thread_name << " finished (flags: threadShouldRun=" << m_threadShouldRun << ", endThread=" << endThread << ").");
+    }
+    
+        
 public:
- 	void join()
-	{
-		m_threadShouldRun = false;
-		ThreadWrapperBase::join();
-	}
-	
-	SickThread(const std::string& thread_name = "") : ThreadWrapperBase(thread_name) {m_threadShouldRun = true;}
-	virtual ~SickThread(){};
-	bool m_threadShouldRun;
+    void join()
+    {
+        m_threadShouldRun = false;
+        ThreadWrapperBase::join();
+    }
+    
+    SickThread(const std::string& thread_name = "") : ThreadWrapperBase(thread_name) {m_threadShouldRun = true;}
+    virtual ~SickThread(){};
+    bool m_threadShouldRun;
 };
 
 /*
 template <typename T, void (T::*M)()>
 class SickThread : public ThreadWrapperBase
 {
- 	void thread_entry()
- 	{
- 		T* pt = static_cast<T*>(pthis);
-		
-		
- 		(pt->*M)();
- 	}
+    void thread_entry()
+    {
+        T* pt = static_cast<T*>(pthis);
+        
+        
+        (pt->*M)();
+    }
 public:
-	SickThread(){}
-	virtual ~SickThread(){};
+    SickThread(){}
+    virtual ~SickThread(){};
 };
 */
 
@@ -227,43 +226,41 @@ public:
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
- 
+
 #define NUM_THREADS     5
- 
+
 void *TaskCode(void *argument)
 {
-   int tid;
- 
-   tid = *((int *) argument);
-   printf("Hello World! It's me, thread %d!\n", tid);
- 
-   // optionally: insert more useful stuff here
- 
-   return NULL;
+int tid;
+
+tid = *((int *) argument);
+printf("Hello World! It's me, thread %d!\n", tid);
+
+// optionally: insert more useful stuff here
+
+return NULL;
 }
- 
+
 int main(void)
 {
-   pthread_t threads[NUM_THREADS];
-   int thread_args[NUM_THREADS];
-   int rc, i;
- 
-   // create all threads
-   for (i=0; i<NUM_THREADS; ++i) {
-      thread_args[i] = i;
-      printf("In main: creating thread %d\n", i);
-      rc = pthread_create(&threads[i], NULL, TaskCode, (void *) &thread_args[i]);
-      assert(0 == rc);
-   }
- 
-   // wait for all threads to complete
-   for (i=0; i<NUM_THREADS; ++i) {
-      rc = pthread_join(threads[i], NULL);
-      assert(0 == rc);
-   }
- 
-   exit(EXIT_SUCCESS);
+pthread_t threads[NUM_THREADS];
+int thread_args[NUM_THREADS];
+int rc, i;
+
+// create all threads
+for (i=0; i<NUM_THREADS; ++i) {
+    thread_args[i] = i;
+    printf("In main: creating thread %d\n", i);
+    rc = pthread_create(&threads[i], NULL, TaskCode, (void *) &thread_args[i]);
+    assert(0 == rc);
+}
+
+// wait for all threads to complete
+for (i=0; i<NUM_THREADS; ++i) {
+    rc = pthread_join(threads[i], NULL);
+    assert(0 == rc);
+}
+
+exit(EXIT_SUCCESS);
 }
 */
-
-#endif // SICKTHREAD_HPP

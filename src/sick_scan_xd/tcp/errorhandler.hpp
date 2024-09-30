@@ -2,9 +2,7 @@
  * Fehler-Handler.
  *
  */
-#ifndef ERRORHANDLER_HPP
-#define ERRORHANDLER_HPP
-
+#pragma once
 
 #include "BasicDatatypes.hpp"
 #include <stdexcept>	// for throw
@@ -22,5 +20,3 @@ void printWarning(std::string message);
 void printError(std::string message);
 
 void doNothing();
-
-#endif // ERRORHANDLER_HPP

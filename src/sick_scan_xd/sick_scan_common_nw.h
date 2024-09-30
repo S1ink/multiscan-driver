@@ -2,8 +2,7 @@
 // Created by michael on 1/22/18.
 //
 
-#ifndef SICK_SCAN_SICK_SCAN_COMMON_NW_H
-#define SICK_SCAN_SICK_SCAN_COMMON_NW_H
+#pragma once
 
 #include "tcp/BasicDatatypes.hpp"
 #include "tcp/tcp.hpp"
@@ -212,6 +211,5 @@ public:
 private:
   UINT32 m_answerLength;
   BYTE *m_answerBuffer;
-};
 
-#endif //SICK_SCAN_SICK_SCAN_COMMON_NW_H
+};

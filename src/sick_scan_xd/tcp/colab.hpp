@@ -4,8 +4,7 @@
 // (c) 2011 SICK AG, Hamburg, Germany
 //
 
-#ifndef COLAB_HPP
-#define COLAB_HPP
+#pragma once
 
 #include "BasicDatatypes.hpp"
 #include <memory.h>	// for memread<>
@@ -38,16 +37,16 @@ void addStringToBuffer(BYTE* buffer, const std::string& stringValue);
 
 /**
  *	Returns bytes from pos to pos+length as string.
- *          pos points to the next byte after (pos+length)
- */
+*          pos points to the next byte after (pos+length)
+*/
 std::string getStringFromBuffer(UINT8* buffer, UINT16& pos, UINT16 length);
 
 
 
 /**
  *	Returns bytes from 0 to length as string.
- *          buffer will be shifted to be able to read the next value
- */
+*          buffer will be shifted to be able to read the next value
+*/
 std::string getStringFromBuffer(BYTE*& buffer, UINT16 length);
 
 
@@ -65,9 +64,9 @@ std::string getCommandStringFromBuffer(UINT8* buffer);
  *  bufferLength is the length of the full buffer (incl. magic word and checksum).
  *
  *	Returns the variable or method identifier from buffer.
- *          pos points to the begin of the next data after identifier.
- *          is pos == 0, there is no more data
- */
+*          pos points to the begin of the next data after identifier.
+*          is pos == 0, there is no more data
+*/
 std::string getIdentifierFromBuffer(UINT8* buffer, UINT16& nextData, UINT16 bufferLength);
 
 
@@ -103,14 +102,14 @@ UINT16 decodeUINT16(BYTE* buffer);
 template<typename T>
 void addIntegerToBuffer(UINT8* buffer, UINT16& pos, T intValue)
 {
-	UINT16 width = sizeof(T);
+    UINT16 width = sizeof(T);
 
-	for (int i = 0; i < width; i++)
-	{
-		buffer[pos+width-1-i] = (intValue >> (8 * i)) & 0xff; // BIG ENDIAN: width-1-i
-	}
+    for (int i = 0; i < width; i++)
+    {
+        buffer[pos+width-1-i] = (intValue >> (8 * i)) & 0xff; // BIG ENDIAN: width-1-i
+    }
 
-	pos += width;
+    pos += width;
 }
 
 
@@ -123,19 +122,19 @@ void addIntegerToBuffer(UINT8* buffer, UINT16& pos, T intValue)
 template<typename T>
 T getIntegerFromBuffer(UINT8* buffer, UINT16& pos)
 {
-	UINT16 width = sizeof(T);
+    UINT16 width = sizeof(T);
 //		UINT8* buffer2 = buffer;
 //		T intValue = memread<T>(buffer2);
 
-	T intValue = 0;
+    T intValue = 0;
 
-	for (int i = 0; i < width; i++)
-	{
-		intValue += buffer[pos+width-1-i] << (8 * i);
-	}
+    for (int i = 0; i < width; i++)
+    {
+        intValue += buffer[pos+width-1-i] << (8 * i);
+    }
 
-	pos += width;
-	return intValue;
+    pos += width;
+    return intValue;
 }
 
 
@@ -151,13 +150,11 @@ T getIntegerFromBuffer(UINT8* buffer, UINT16& pos)
 template<typename T>
 void addFloatToBuffer(UINT8* buffer, UINT16& pos, T floatValue)
 {
-	UINT16 width = sizeof(T);
+    UINT16 width = sizeof(T);
 
 
 
-	pos += width;
+    pos += width;
 }
 
-
 } // END namespace colab
-#endif

@@ -54,8 +54,8 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_UDP_RECEIVER_H
-#define __SICK_SCANSEGMENT_XD_UDP_RECEIVER_H
+
+#pragma once
 
 #include "common.h"
 #include "fifo.h"
@@ -164,4 +164,3 @@ namespace sick_scansegment_xd
     };  // class UdpReceiver
 
 }   // namespace sick_scansegment_xd
-#endif // __SICK_SCANSEGMENT_XD_UDP_RECEIVER_H

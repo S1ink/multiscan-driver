@@ -56,8 +56,10 @@
 #include "compact_parser.h"
 // #include "config.h"
 #include "udp_receiver.h"
+#include "sick_ros_wrapper.h"
 
 #define TARGET_IS_LITTLE_ENDIAN 1
+
 
 union COMPACT_4BYTE_UNION
 {

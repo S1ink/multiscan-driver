@@ -1,5 +1,4 @@
-#ifndef SOFTWARE_PLL_H
-#define SOFTWARE_PLL_H
+#pragma once
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4996)
@@ -145,7 +144,5 @@ private:
   SoftwarePLL(const SoftwarePLL &); /* verhindert, dass eine weitere Instanz via
 								   Kopier-Konstruktor erstellt werden kann */
   SoftwarePLL &operator=(const SoftwarePLL &); //Verhindert weitere Instanz durch Kopie
+
 };
-
-
-#endif

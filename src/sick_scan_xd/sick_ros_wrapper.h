@@ -3,6 +3,19 @@
 #include <chrono>
 #include <thread>
 #include <cstdint>
+#include <iostream>
+
+
+#define ROS_DEBUG_STREAM(x) /*std::cout << x << std::endl;*/
+#define ROS_INFO_STREAM(x) std::cout << x << std::endl;
+#define ROS_WARN_STREAM(x) std::cout << x << std::endl;
+#define ROS_ERROR_STREAM(x) std::cout << x << std::endl;
+#define ROS_DEBUG(x)
+#define ROS_INFO(x)
+#define ROS_WARN(x)
+#define ROS_ERROR(x)
+
+static inline constexpr bool rosOk() { return true; }
 
 
 struct rosTime

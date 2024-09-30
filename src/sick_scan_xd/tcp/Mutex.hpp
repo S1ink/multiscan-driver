@@ -2,8 +2,7 @@
  * \file Mutex.hpp
  */
 
-#ifndef MUTEX_HPP
-#define MUTEX_HPP
+#pragma once
 
 #include <mutex>
 #include <thread>
@@ -18,15 +17,15 @@
 class Mutex
 {
 public:
-	Mutex();
-	~Mutex();
+    Mutex();
+    ~Mutex();
 
-	void lock();
-	void unlock();
+    void lock();
+    void unlock();
 
 private:
     std::mutex m_mutex;
-	// pthread_mutex_t m_mutex;
+    // pthread_mutex_t m_mutex;
 };
 
 
@@ -38,11 +37,9 @@ private:
 class ScopedLock
 {
 public:
-	ScopedLock(Mutex* mutexPtr);
-	~ScopedLock();
+    ScopedLock(Mutex* mutexPtr);
+    ~ScopedLock();
 private:
-	Mutex* m_mutexPtr;
+    Mutex* m_mutexPtr;
+
 };
-
-
-#endif // MUTEX_HPP
