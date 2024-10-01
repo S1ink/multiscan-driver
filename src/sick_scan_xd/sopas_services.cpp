@@ -1,0 +1,688 @@
+/*
+ * @brief Implementation of ROS services for sick_scan
+ *
+ * Copyright (C) 2021, Ing.-Buero Dr. Michael Lehning, Hildesheim
+ * Copyright (C) 2021, SICK AG, Waldkirch
+ * All rights reserved.
+ *
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*       http://www.apache.org/licenses/LICENSE-2.0
+*
+*   Unless required by applicable law or agreed to in writing, software
+*   distributed under the License is distributed on an "AS IS" BASIS,
+*   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*   See the License for the specific language governing permissions and
+*   limitations under the License.
+*
+*
+* All rights reserved.
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+*     * Redistributions of source code must retain the above copyright
+*       notice, this list of conditions and the following disclaimer.
+*     * Redistributions in binary form must reproduce the above copyright
+*       notice, this list of conditions and the following disclaimer in the
+*       documentation and/or other materials provided with the distribution.
+*     * Neither the name of Osnabrueck University nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission.
+*     * Neither the name of SICK AG nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission
+*     * Neither the name of Ing.-Buero Dr. Michael Lehning nor the names of its
+*       contributors may be used to endorse or promote products derived from
+*       this software without specific prior written permission
+*
+* THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+* AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+* IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+* ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+* LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+* CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+* SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+* INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+* CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+* ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+* POSSIBILITY OF SUCH DAMAGE.
+ *
+ *  Created on: 12.01.2021
+ *
+ *      Authors:
+ *         Michael Lehning <michael.lehning@lehning.de>
+ *
+ * Based on the TiM communication example by SICK AG.
+ *
+ */
+#include <iostream>
+#include <iomanip>
+#include <cmath>
+
+#include "sopas_services.h"
+#include "sick_ros_wrapper.h"
+
+#define SCANSEGMENT_XD_SOPAS_ARGS_BIG_ENDIAN (true) // Arguments of SOPAS commands are big endian encoded
+
+
+sick_scan_xd::SopasServices::SopasServices(sick_scan_xd::SickScanCommonTcp* common_tcp, bool use_cola_binary)
+  : m_common_tcp(common_tcp), m_cola_binary(use_cola_binary), m_client_authorization_pw("F4724744")
+{}
+
+sick_scan_xd::SopasServices::~SopasServices() {}
+
+/*!
+ * Sends a sopas command and returns the lidar reply.
+ * @param[in] sopasCmd sopas command to send, f.e. "sEN ECRChangeArr 1"
+ * @param[out] sopasReplyBin response from lidar incl. start/stop byte
+ * @param[out] sopasReplyString sopasReplyBin converted to string
+ * @return true on success, false in case of errors.
+ */
+bool sick_scan_xd::SopasServices::sendSopasAndCheckAnswer(const std::string& sopasCmd, std::vector<unsigned char>& sopasReplyBin, std::string& sopasReplyString)
+{
+  if(m_common_tcp)
+  {
+    ROS_INFO_STREAM("SopasServices: Sending request \"" << sopasCmd << "\"");
+    std::string sopasRequest = std::string("\x02") + sopasCmd + "\x03";
+    int result = -1;
+    if (m_cola_binary)
+    {
+      std::vector<unsigned char> reqBinary;
+      m_common_tcp->convertAscii2BinaryCmd(sopasRequest.c_str(), &reqBinary);
+      result = m_common_tcp->sendSopasAndCheckAnswer(reqBinary, &sopasReplyBin, -1);
+    }
+    else
+    {
+      result = m_common_tcp->sendSopasAndCheckAnswer(sopasRequest.c_str(), &sopasReplyBin, -1);
+    }
+    if (result != 0)
+    {
+      ROS_ERROR_STREAM("## ERROR SopasServices::sendSopasAndCheckAnswer: error sending sopas command \"" << sopasCmd << "\"");
+    }
+    else
+    {
+      sopasReplyString = m_common_tcp->sopasReplyToString(sopasReplyBin);
+      ROS_INFO_STREAM("SopasServices: Request \"" << sopasCmd << "\" successfully sent, received reply \"" << sopasReplyString << "\"");
+      return true;
+    }
+  }
+  else
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendSopasAndCheckAnswer: m_common_tcp not initialized");
+  }
+  return false;
+}
+
+/*!
+ * Sends the SOPAS authorization command "sMN SetAccessMode 3 F4724744".
+ */
+bool sick_scan_xd::SopasServices::sendAuthorization()
+{
+  std::string sopasCmd = std::string("sMN SetAccessMode 3 ") + m_client_authorization_pw;
+  std::vector<unsigned char> sopasReplyBin;
+  std::string sopasReplyString;
+
+  if(!sendSopasAndCheckAnswer(sopasCmd, sopasReplyBin, sopasReplyString))
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendSopasAndCheckAnswer failed on sending command\"" << sopasCmd << "\"");
+    return false;
+  }
+
+  ROS_INFO_STREAM("SopasServices: request: \"" << sopasCmd << "\"");
+  ROS_INFO_STREAM("SopasServices: response: \"" << sopasReplyString << "\"");
+
+  return true;
+}
+
+/*!
+ * Sends the SOPAS command "sMN Run", which applies previous send settings
+ */
+bool sick_scan_xd::SopasServices::sendRun()
+{
+  std::string sopasCmd = std::string("sMN Run");
+  std::vector<unsigned char> sopasReplyBin;
+  std::string sopasReplyString;
+
+  if(!sendSopasAndCheckAnswer(sopasCmd, sopasReplyBin, sopasReplyString))
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendSopasAndCheckAnswer failed on sending command\"" << sopasCmd << "\"");
+    return false;
+  }
+
+  ROS_INFO_STREAM("SopasServices: request: \"" << sopasCmd << "\"");
+  ROS_INFO_STREAM("SopasServices: response: \"" << sopasReplyString << "\"");
+
+  return true;
+}
+
+/*!
+ * Sends a multiScan136 command
+ */
+bool sick_scan_xd::SopasServices::sendSopasCmdCheckResponse(const std::string& sopas_request, const std::string& expected_response)
+{
+  std::vector<unsigned char> sopasReplyBin;
+  std::string sopasReplyString;
+  if(!sendSopasAndCheckAnswer(sopas_request, sopasReplyBin, sopasReplyString))
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendSopasCmdCheckResponse() failed on sending command\"" << sopas_request << "\"");
+    return false;
+  }
+  ROS_INFO_STREAM("SopasServices::sendSopasCmdCheckResponse(): request: \"" << sopas_request << "\", response: \"" << sopasReplyString << "\"");
+  if(sopasReplyString.find(expected_response) == std::string::npos)
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendSopasCmdCheckResponse(): request: \"" << sopas_request << "\", unexpected response: \"" << sopasReplyString << "\", \"" << expected_response << "\" not found");
+    return false;
+  }
+  return true;
+}
+
+/*!
+* Sends the multiScan start commands "sWN ScanDataFormat", "sWN ScanDataPreformatting", "sWN ScanDataEthSettings", "sWN ScanDataEnable 1", "sMN LMCstartmeas", "sMN Run"
+* @param[in] hostname IP address of multiScan136, default 192.168.0.1
+* @param[in] port IP port of multiScan136, default 2115
+* @param[in] scanner_type type of scanner, currently supported are multiScan136 and picoScan150
+* @param[in] scandataformat ScanDataFormat: 1 for msgpack or 2 for compact scandata, default: 2 
+* @param[in] imu_enable: Imu data transfer enabled
+* @param[in] imu_udp_port: UDP port of imu data (if imu_enable is true)
+*/
+bool sick_scan_xd::SopasServices::sendMultiScanStartCmd(const std::string& hostname, int port, int scandataformat, bool imu_enable, int imu_udp_port, int performanceprofilenumber)
+{
+  std::stringstream ip_stream(hostname);
+  std::string ip_token;
+  std::vector<std::string> ip_tokens;
+  while (getline(ip_stream, ip_token, '.'))
+  {
+    ip_tokens.push_back(ip_token);
+  }
+  if (ip_tokens.size() != 4)
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStartCmd() failed: can't split ip address \"" << hostname << "\" into 4 tokens, check ip address");
+    ROS_ERROR_STREAM("## ERROR parsing ip address, check configuration of parameter \"hostname\" (launch file or commandline).");
+    ROS_ERROR_STREAM("## In case of multiscan/sick_scansegment_xd lidars, check parameter \"udp_receiver_ip\", too.");
+    return false;
+  }
+  std::stringstream eth_settings_cmd, imu_eth_settings_cmd, scandataformat_cmd, performanceprofilenumber_cmd;
+  scandataformat_cmd << "sWN ScanDataFormat " << scandataformat;
+  if (performanceprofilenumber >= 0)
+  {
+    performanceprofilenumber_cmd << "sWN PerformanceProfileNumber " << std::uppercase << std::hex << performanceprofilenumber;
+  }
+  eth_settings_cmd << "sWN ScanDataEthSettings 1";
+  imu_eth_settings_cmd << "sWN ImuDataEthSettings 1";
+  for (size_t i = 0; i < ip_tokens.size(); i++)
+  {
+    eth_settings_cmd << " +";
+    eth_settings_cmd << ip_tokens[i];
+    imu_eth_settings_cmd << " +";
+    imu_eth_settings_cmd << ip_tokens[i];
+  }
+  eth_settings_cmd << " +";
+  eth_settings_cmd << port;
+  imu_eth_settings_cmd << " +";
+  imu_eth_settings_cmd << imu_udp_port;
+  if (!sendSopasCmdCheckResponse(eth_settings_cmd.str(), "sWA ScanDataEthSettings")) // configure destination scan data output destination , f.e. "sWN ScanDataEthSettings 1 +192 +168 +0 +52 +2115" (ip 192.168.0.52 port 2115)
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStartCmd(): sendSopasCmdCheckResponse(\"sWN ScanDataEthSettings 1\") failed.");
+    return false;
+  }
+  if (scandataformat != 1 && scandataformat != 2)
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiscanStartCmd(): invalid scandataformat configuration, unsupported scandataformat=" << scandataformat << ", check configuration and use 1 for msgpack or 2 for compact data");
+    return false;
+  }
+  if (!sendSopasCmdCheckResponse(scandataformat_cmd.str(), "sWA ScanDataFormat")) // set scan data output format to MSGPACK (1) or COMPACT (2)
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiscanStartCmd(): sendSopasCmdCheckResponse(\"sWN ScanDataFormat 1\") failed.");
+    return false;
+  }
+  if (performanceprofilenumber >= 0)
+  {
+    if (!sendSopasCmdCheckResponse(performanceprofilenumber_cmd.str(), "sWA PerformanceProfileNumber"))
+    {
+      ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiscanStartCmd(): sendSopasCmdCheckResponse(\"sWN PerformanceProfileNumber ..\") failed.");
+      return false;
+    }
+  }
+  if (!sendSopasCmdCheckResponse("sWN ScanDataPreformatting 1", "sWA ScanDataPreformatting")) // ScanDataPreformatting for multiScan136 only
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiscanStartCmd(): sendSopasCmdCheckResponse(\"sWN ScanDataPreformatting 1\") failed.");
+    return false;
+  }
+  if (imu_enable && !sendSopasCmdCheckResponse(imu_eth_settings_cmd.str(), "sWA ImuDataEthSettings")) // imu data eth settings
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStartCmd(): sendSopasCmdCheckResponse(\"" << imu_eth_settings_cmd.str() << "\") failed.");
+  }
+  if (!sendRun())
+  {
+    return false;
+  }
+  if (!sendAuthorization())
+  {
+     return false;
+  }
+  if (!sendSopasCmdCheckResponse("sWN ScanDataEnable 1", "sWA ScanDataEnable")) // enable scan data output
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStartCmd(): sendSopasCmdCheckResponse(\"sWN ScanDataEnable 1\") failed.");
+    return false;
+  }
+  if (imu_enable && !sendSopasCmdCheckResponse("sWN ImuDataEnable 1", "sWA ImuDataEnable")) // enable imu data transfer
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStartCmd(): sendSopasCmdCheckResponse(\"sWN ImuDataEnable 1\") failed.");
+  }
+  if (!sendRun())
+  {
+    return false;
+  }
+  if (!sendAuthorization())
+  {
+     return false;
+  }
+  if (!sendSopasCmdCheckResponse("sMN LMCstartmeas", "sAN LMCstartmeas")) // start measurement
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStartCmd(): sendSopasCmdCheckResponse(\"sMN LMCstartmeas\") failed.");
+    return false;
+  }
+  return true;
+}
+
+/*!
+ * Sends the multiScan136 stop commands "sWN ScanDataEnable 0" and "sMN Run"
+ */
+bool sick_scan_xd::SopasServices::sendMultiScanStopCmd(bool imu_enable)
+{
+  if (!sendSopasCmdCheckResponse("sWN ScanDataEnable 0", "sWA ScanDataEnable")) // disable scan data output
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStopCmd(): sendSopasCmdCheckResponse(\"sWN ScanDataEnable 0\") failed.");
+    return false;
+  }
+  if (imu_enable && !sendSopasCmdCheckResponse("sWN ImuDataEnable 0", "sWA ImuDataEnable")) // disable imu data output
+  {
+    ROS_ERROR_STREAM("## ERROR SopasServices::sendMultiScanStopCmd(): sendSopasCmdCheckResponse(\"sWN ImuDataEnable 0\") failed.");
+    return false;
+  }
+  if (!sendRun())
+  {
+    return false;
+  }
+  return true;
+}
+
+// union FLOAT_BYTE32_UNION
+// {
+//   uint8_t u8_bytes[4];
+//   uint32_t u32_bytes;
+//   int32_t i32_bytes;
+//   float value;
+// };
+
+/*!
+* Converts a hex string (hex_str: 4 byte hex value as string, little or big endian) to float.
+* Check f.e. by https://www.h-schmidt.net/FloatConverter/IEEE754.html
+* Examples:
+* convertHexStringToFloat("C0490FF9", true) returns -3.14
+* convertHexStringToFloat("3FC90FF9", true) returns +1.57
+*/
+// float sick_scan_xd::SopasServices::convertHexStringToFloat(const std::string& hex_str, bool hexStrIsBigEndian)
+// {
+//   FLOAT_BYTE32_UNION hex_buffer;
+//   if(hexStrIsBigEndian)
+//   {
+//     for(int m = 3, n = 1; n < hex_str.size(); n+=2, m--)
+//     {
+//       char hexval[4] = { hex_str[n-1], hex_str[n], '\0', '\0' };
+//       hex_buffer.u8_bytes[m] = (uint8_t)(std::strtoul(hexval, NULL, 16) & 0xFF);
+//     }
+//   }
+//   else
+//   {
+//     for(int m = 0, n = 1; n < hex_str.size(); n+=2, m++)
+//     {
+//       char hexval[4] = { hex_str[n-1], hex_str[n], '\0', '\0' };
+//       hex_buffer.u8_bytes[m] = (uint8_t)(std::strtoul(hexval, NULL, 16) & 0xFF);
+//     }
+//   }
+//   // ROS_DEBUG_STREAM("convertHexStringToFloat(" << hex_str << ", " << hexStrIsBigEndian << "): " << std::hex << hex_buffer.u32_bytes << " = " << std::fixed << hex_buffer.value);
+//   return hex_buffer.value;
+// }
+
+/*!
+* Converts a float value to hex string (hex_str: 4 byte hex value as string, little or big endian).
+* Check f.e. by https://www.h-schmidt.net/FloatConverter/IEEE754.html
+* Examples:
+* convertFloatToHexString(-3.14, true) returns "C0490FDB"
+* convertFloatToHexString(+1.57, true) returns "3FC90FF8"
+*/
+// std::string sick_scan_xd::SopasServices::convertFloatToHexString(float value, bool hexStrIsBigEndian)
+// {
+//   FLOAT_BYTE32_UNION hex_buffer;
+//   hex_buffer.value = value;
+//   std::stringstream hex_str;
+//   if(hexStrIsBigEndian)
+//   {
+//     for(int n = 3; n >= 0; n--)
+//       hex_str << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)(hex_buffer.u8_bytes[n]);
+//   }
+//   else
+//   {
+//     for(int n = 0; n < 4; n++)
+//       hex_str << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)(hex_buffer.u8_bytes[n]);
+//   }
+//   // ROS_DEBUG_STREAM("convertFloatToHexString(" << value << ", " << hexStrIsBigEndian << "): " << hex_str.str());
+//   return hex_str.str();
+// }
+
+/*!
+* Converts a hex string coded in 1/10000 deg (hex_str: 4 byte hex value as string, little or big endian) to an angle in [deg] (float).
+*/
+// float sick_scan_xd::SopasServices::convertHexStringToAngleDeg(const std::string& hex_str, bool hexStrIsBigEndian)
+// {
+//   char hex_str_8byte[9] = "00000000";
+//   for(int m=7,n=hex_str.size()-1; n >= 0; m--,n--)
+//     hex_str_8byte[m] = hex_str[n]; // fill with leading '0'
+//   FLOAT_BYTE32_UNION hex_buffer;
+//   if(hexStrIsBigEndian)
+//   {
+//     for(int m = 3, n = 1; n < 8; n+=2, m--)
+//     {
+//       char hexval[4] = { hex_str_8byte[n-1], hex_str_8byte[n], '\0', '\0' };
+//       hex_buffer.u8_bytes[m] = (uint8_t)(std::strtoul(hexval, NULL, 16) & 0xFF);
+//     }
+//   }
+//   else
+//   {
+//     for(int m = 0, n = 1; n < 8; n+=2, m++)
+//     {
+//       char hexval[4] = { hex_str_8byte[n-1], hex_str_8byte[n], '\0', '\0' };
+//       hex_buffer.u8_bytes[m] = (uint8_t)(std::strtoul(hexval, NULL, 16) & 0xFF);
+//     }
+//   }
+//   float angle_deg = (float)(hex_buffer.i32_bytes / 10000.0);
+//   // ROS_DEBUG_STREAM("convertHexStringToAngleDeg(" << hex_str << ", " << hexStrIsBigEndian << "): " << angle_deg << " [deg]");
+//   return angle_deg;
+// }
+
+/*!
+* Converts an angle in [deg] to hex string coded in 1/10000 deg (hex_str: 4 byte hex value as string, little or big endian).
+*/
+// std::string sick_scan_xd::SopasServices::convertAngleDegToHexString(float angle_deg, bool hexStrIsBigEndian)
+// {
+//   int32_t angle_val = (int32_t)std::round(angle_deg * 10000.0f);
+//   FLOAT_BYTE32_UNION hex_buffer;
+//   hex_buffer.i32_bytes = angle_val;
+//   std::stringstream hex_str;
+//   if(hexStrIsBigEndian)
+//   {
+//     for(int n = 3; n >= 0; n--)
+//       hex_str << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)(hex_buffer.u8_bytes[n]);
+//   }
+//   else
+//   {
+//     for(int n = 0; n < 4; n++)
+//       hex_str << std::setfill('0') << std::setw(2) << std::uppercase << std::hex << (int)(hex_buffer.u8_bytes[n]);
+//   }
+//   // ROS_DEBUG_STREAM("convertAngleDegToHexString(" << angle_deg << "  [deg], " << hexStrIsBigEndian << "): " << hex_str.str());
+//   return hex_str.str();
+// }
+
+// #if defined SCANSEGMENT_XD_SUPPORT && SCANSEGMENT_XD_SUPPORT > 0
+// /*!
+// * Sends the SOPAS command to query multiScan136 filter settings (FREchoFilter, LFPangleRangeFilter, host_LFPlayerFilter)
+// * @param[out] host_FREchoFilter FREchoFilter settings, default: 1, otherwise 0 for FIRST_ECHO (EchoCount=1), 1 for ALL_ECHOS (EchoCount=3), or 2 for LAST_ECHO (EchoCount=1)
+// * @param[out] host_LFPangleRangeFilter LFPangleRangeFilter settings, default: "0 -180.0 +180.0 -90.0 +90.0 1", otherwise "<enabled> <azimuth_start> <azimuth_stop> <elevation_start> <elevation_stop> <beam_increment>" with azimuth and elevation given in degree
+// * @param[out] host_LFPlayerFilter LFPlayerFilter settings, default: "0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1", otherwise  "<enabled> <layer0-enabled> <layer1-enabled> <layer2-enabled> ... <layer15-enabled>" with 1 for enabled and 0 for disabled
+// * @param[out] msgpack_validator_filter_settings; // filter settings for msgpack validator: required_echos, azimuth_start, azimuth_end. elevation_start, elevation_end, layer_filter
+// */
+// bool sick_scan_xd::SopasServices::queryMultiScanFiltersettings(int& host_FREchoFilter, std::string& host_LFPangleRangeFilter, std::string& host_LFPlayerFilter,
+//   sick_scansegment_xd::MsgpackValidatorFilterConfig& msgpack_validator_filter_settings, const std::string& scanner_type)
+// {
+//   std::vector<std::vector<unsigned char>> sopasRepliesBin;
+//   std::vector<std::string> sopasRepliesString;
+
+//   // Query FREchoFilter, LFPangleRangeFilter and LFPlayerFilter settings
+//   bool enableFREchoFilter = true, enableLFPangleRangeFilter = true, enableLFPlayerFilter = true;
+//   if (scanner_type == SICK_SCANNER_PICOSCAN_NAME) // LFPangleRangeFilter and LFPlayerFilter not supported by picoscan150
+//   {
+//     enableLFPangleRangeFilter = false;
+//     enableLFPlayerFilter = false;
+//   }
+//   std::vector<std::string> sopasCommands;
+//   if (enableFREchoFilter)
+//     sopasCommands.push_back("FREchoFilter");
+//   if (enableLFPangleRangeFilter)
+//     sopasCommands.push_back("LFPangleRangeFilter");
+//   if (enableLFPlayerFilter)
+//     sopasCommands.push_back("LFPlayerFilter");
+//   for(int n = 0; n < sopasCommands.size(); n++)
+//   {
+//     std::string sopasRequest = "sRN " + sopasCommands[n];
+//     std::string sopasExpectedResponse = "sRA " +  sopasCommands[n];
+//     std::vector<unsigned char> sopasReplyBin;
+//     std::string sopasReplyString;
+//     if(!sendSopasAndCheckAnswer(sopasRequest, sopasReplyBin, sopasReplyString) || sopasReplyString.find(sopasExpectedResponse) == std::string::npos)
+//     {
+//       ROS_ERROR_STREAM("## ERROR SopasServices::queryMultiScanFiltersettings(): sendSopasAndCheckAnswer(\"" << sopasRequest << "\") failed or unexpected response: \"" << sopasReplyString << "\", expected: \"" << sopasExpectedResponse << "\"");
+//       return false;
+//     }
+//     ROS_DEBUG_STREAM("SopasServices::queryMultiScanFiltersettings(): request: \"" << sopasRequest << "\", response: \"" << sopasReplyString << "\"");
+//     sopasRepliesBin.push_back(sopasReplyBin);
+//     sopasRepliesString.push_back(sopasReplyString);
+//   }
+
+//   // Convert sopas answers
+//   std::vector<std::vector<std::string>> sopasTokens;
+//   for(int n = 0; n < sopasCommands.size(); n++)
+//   {
+//     std::string parameterString = sopasRepliesString[n].substr(4 + sopasCommands[n].size() + 1);
+//     std::vector<std::string> parameterToken;
+//     sick_scansegment_xd::util::parseVector(parameterString, parameterToken, ' ');
+//     sopasTokens.push_back(parameterToken);
+//     ROS_INFO_STREAM("SopasServices::queryMultiScanFiltersettings(): " << sopasCommands[n] << ": \"" << parameterString << "\" = {" << sick_scansegment_xd::util::printVector(parameterToken, ",") << "}");
+//   }
+
+//   std::vector<float> multiscan_angles_deg;
+//   std::vector<int> layer_active_vector;
+//   for(int sopasCommandCnt = 0; sopasCommandCnt < sopasCommands.size(); sopasCommandCnt++)
+//   {
+//     const std::string& sopasCommand = sopasCommands[sopasCommandCnt];
+//     const std::vector<std::string>& sopasToken = sopasTokens[sopasCommandCnt];
+
+//     if (sopasCommand == "FREchoFilter") // Parse FREchoFilter
+//     {
+//       if(sopasToken.size() == 1)
+//       {
+//         host_FREchoFilter = std::stoi(sopasToken[0]);
+//       }
+//       else
+//       {
+//         ROS_ERROR_STREAM("## ERROR SopasServices::queryMultiScanFiltersettings(): parse error in FREchoFilter");
+//         return false;
+//       }
+//     }
+
+//     if (sopasCommand == "LFPangleRangeFilter") // Parse LFPangleRangeFilter
+//     {
+//       if(sopasToken.size() == 6)
+//       {
+//         std::stringstream parameter;
+//         int filter_enabled = std::stoi(sopasToken[0]); // <enabled>
+//         parameter << filter_enabled;
+//         for(int n = 1; n < 5; n++) // <azimuth_start> <azimuth_stop> <elevation_start> <elevation_stop>
+//         {
+//           // float angle_deg = (convertHexStringToFloat(sopasToken[n], SCANSEGMENT_XD_SOPAS_ARGS_BIG_ENDIAN) * 180.0 / M_PI);
+//           float angle_deg = convertHexStringToAngleDeg(sopasToken[n], SCANSEGMENT_XD_SOPAS_ARGS_BIG_ENDIAN);
+//           parameter << " " << angle_deg;
+//           if(filter_enabled)
+//             multiscan_angles_deg.push_back(angle_deg);
+//         }
+//         parameter << " " << sopasToken[5]; // <beam_increment>
+//         host_LFPangleRangeFilter = parameter.str();
+//       }
+//       else
+//       {
+//         ROS_ERROR_STREAM("## ERROR SopasServices::queryMultiScanFiltersettings(): parse error in LFPangleRangeFilter");
+//         return false;
+//       }
+//     }
+
+//     if (sopasCommand == "LFPlayerFilter") // Parse LFPlayerFilter
+//     {
+//       if(sopasToken.size() == 17)
+//       {
+//         std::stringstream parameter;
+//         int filter_enabled = std::stoi(sopasToken[0]); // <enabled>
+//         parameter << filter_enabled;
+//         for(int n = 1; n < sopasToken.size(); n++)
+//         {
+//           int layer_active = std::stoi(sopasToken[n]);
+//           if(filter_enabled)
+//             layer_active_vector.push_back(layer_active);
+//           parameter << " " << layer_active;
+//         }
+//         host_LFPlayerFilter = parameter.str();
+//       }
+//       else
+//       {
+//         ROS_ERROR_STREAM("## ERROR SopasServices::queryMultiScanFiltersettings(): parse error in LFPlayerFilter");
+//         return false;
+//       }
+//     }
+//   }
+
+//   // Set filter settings for validation of msgpack data, i.e. set config.msgpack_validator_required_echos, config.msgpack_validator_azimuth_start, config.msgpack_validator_azimuth_end,
+//   // config.msgpack_validator_elevation_start, config.msgpack_validator_elevation_end, config.msgpack_validator_layer_filter according to the queried filter settings
+//   if(host_FREchoFilter == 0 || host_FREchoFilter == 2) // 0: FIRST_ECHO (EchoCount=1), 2: LAST_ECHO (EchoCount=1)
+//   {
+//     msgpack_validator_filter_settings.msgpack_validator_required_echos = { 0 }; // one echo with index 0
+//   }
+//   else if(host_FREchoFilter == 1) // 1: ALL_ECHOS (EchoCount=3)
+//   {
+//     msgpack_validator_filter_settings.msgpack_validator_required_echos = { 0, 1, 2 }; // three echos with index 0, 1, 2
+//   }
+//   else
+//   {
+//     ROS_ERROR_STREAM("## ERROR SopasServices::queryMultiScanFiltersettings(): unexpected value of FREchoFilter = " << host_FREchoFilter
+//     << ", expected 0: FIRST_ECHO (EchoCount=1), 1: ALL_ECHOS (EchoCount=3) or 2: LAST_ECHO (EchoCount=1)");
+//     return false;
+//   }
+//   if(multiscan_angles_deg.size() == 4) // otherwise LFPangleRangeFilter disabled (-> use configured default values)
+//   {
+//     msgpack_validator_filter_settings.msgpack_validator_azimuth_start = (multiscan_angles_deg[0] * M_PI / 180);
+//     msgpack_validator_filter_settings.msgpack_validator_azimuth_end = (multiscan_angles_deg[1] * M_PI / 180);
+//     msgpack_validator_filter_settings.msgpack_validator_elevation_start = (multiscan_angles_deg[2] * M_PI / 180);
+//     msgpack_validator_filter_settings.msgpack_validator_elevation_end = (multiscan_angles_deg[3] * M_PI / 180);
+//   }
+//   if(layer_active_vector.size() == 16)  // otherwise LFPlayerFilter disabled (-> use configured default values)
+//   {
+//     msgpack_validator_filter_settings.msgpack_validator_layer_filter = layer_active_vector;
+//   }
+
+//   // Example: sopas.FREchoFilter = "1", sopas.LFPangleRangeFilter = "0 -180 180 -90.0002 90.0002 1", sopas.LFPlayerFilter = "0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1"
+//   // msgpack_validator_required_echos = { 0 }, msgpack_validator_angles = { -3.14159 3.14159 -1.5708 1.5708 } [rad], msgpack_validator_layer_filter = { 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 }
+//   ROS_INFO_STREAM("SopasServices::queryMultiScanFiltersettings(): sopas.FREchoFilter = \"" << host_FREchoFilter
+//     << "\", sopas.LFPangleRangeFilter = \"" << host_LFPangleRangeFilter
+//     << "\", sopas.LFPlayerFilter = \"" << host_LFPlayerFilter  << "\"");
+//   ROS_INFO_STREAM("SopasServices::queryMultiScanFiltersettings(): msgpack_validator_required_echos = { " << sick_scansegment_xd::util::printVector(msgpack_validator_filter_settings.msgpack_validator_required_echos)
+//     << " }, msgpack_validator_angles = { " << msgpack_validator_filter_settings.msgpack_validator_azimuth_start << " " << msgpack_validator_filter_settings.msgpack_validator_azimuth_end
+//     << " " << msgpack_validator_filter_settings.msgpack_validator_elevation_start << " " << msgpack_validator_filter_settings.msgpack_validator_elevation_end
+//     << " } [rad], msgpack_validator_layer_filter = { " << sick_scansegment_xd::util::printVector(msgpack_validator_filter_settings.msgpack_validator_layer_filter)  << " }");
+//   return true;
+// }
+// #endif // SCANSEGMENT_XD_SUPPORT
+
+// #if defined SCANSEGMENT_XD_SUPPORT && SCANSEGMENT_XD_SUPPORT > 0
+// /*!
+// * Sends the SOPAS command to write multiScan136 filter settings (FREchoFilter, LFPangleRangeFilter, host_LFPlayerFilter)
+// * @param[in] host_FREchoFilter FREchoFilter settings, default: 1, otherwise 0 for FIRST_ECHO (EchoCount=1), 1 for ALL_ECHOS (EchoCount=3), or 2 for LAST_ECHO (EchoCount=1)
+// * @param[in] host_LFPangleRangeFilter LFPangleRangeFilter settings, default: "0 -180.0 +180.0 -90.0 +90.0 1", otherwise "<enabled> <azimuth_start> <azimuth_stop> <elevation_start> <elevation_stop> <beam_increment>" with azimuth and elevation given in degree
+// * @param[in] host_LFPlayerFilter LFPlayerFilter settings, default: "0 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1", otherwise  "<enabled> <layer0-enabled> <layer1-enabled> <layer2-enabled> ... <layer15-enabled>" with 1 for enabled and 0 for disabled
+// * @param[in] host_LFPintervalFilter Optionally set LFPintervalFilter to "<enabled> <N>" with 1 for enabled and 0 for disabled and N to reduce output to every N-th scan
+// */
+// bool sick_scan_xd::SopasServices::writeMultiScanFiltersettings(int host_FREchoFilter, const std::string& host_LFPangleRangeFilter, const std::string& host_LFPlayerFilter, const std::string& host_LFPintervalFilter, const std::string& scanner_type)
+// {
+//   bool enableFREchoFilter = true, enableLFPangleRangeFilter = true, enableLFPlayerFilter = true, enableLFPintervalFilter = true;
+//   if (scanner_type == SICK_SCANNER_PICOSCAN_NAME) // LFPangleRangeFilter, LFPlayerFilter ant LFPintervalFilter not supported by picoscan150
+//   {
+//     enableLFPangleRangeFilter = false;
+//     enableLFPlayerFilter = false;
+//     enableLFPintervalFilter = false;
+//   }
+
+//   // Write FREchoFilter
+//   if(enableFREchoFilter && host_FREchoFilter >= 0) // otherwise not configured or supported
+//   {
+//     std::string sopasRequest = "sWN FREchoFilter " + std::to_string(host_FREchoFilter), sopasExpectedResponse = "sWA FREchoFilter";
+//     if (!sendSopasCmdCheckResponse(sopasRequest, sopasExpectedResponse))
+//     {
+//       ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings(): sendSopasCmdCheckResponse(\"" << sopasRequest << "\") failed.");
+//       return false;
+//     }
+//   }
+
+//   // Write LFPangleRangeFilter
+//   if(enableLFPangleRangeFilter && !host_LFPangleRangeFilter.empty()) // otherwise not configured or supported
+//   {
+//     // convert deg to rad and float to hex
+//     std::vector<std::string> parameter_token;
+//     sick_scansegment_xd::util::parseVector(host_LFPangleRangeFilter, parameter_token, ' ');
+//     if(parameter_token.size() != 6)
+//     {
+//       ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings(): can't split host_LFPangleRangeFilter = \"" << host_LFPangleRangeFilter << "\", expected 6 values separated by space");
+//       ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings() failed.");
+//       return false;
+//     }
+//     int filter_enabled = std::stoi(parameter_token[0]); // <enabled>
+//     std::vector<float> angle_deg;
+//     for(int n = 1; n < 5; n++)
+//       angle_deg.push_back(std::stof(parameter_token[n]));
+//     int beam_increment = std::stoi(parameter_token[5]); // <beam_increment>
+//     std::stringstream sopas_parameter;
+//     sopas_parameter << filter_enabled;
+//     for(int n = 0; n < angle_deg.size(); n++)
+//     {
+//       // sopas_parameter << " " << convertFloatToHexString(angle_deg[n] * M_PI / 180, SCANSEGMENT_XD_SOPAS_ARGS_BIG_ENDIAN);
+//       sopas_parameter << " " << convertAngleDegToHexString(angle_deg[n], SCANSEGMENT_XD_SOPAS_ARGS_BIG_ENDIAN);
+//     }
+//     sopas_parameter << " " << beam_increment;
+//     // Write LFPangleRangeFilter
+//     std::string sopasRequest = "sWN LFPangleRangeFilter " + sopas_parameter.str(), sopasExpectedResponse = "sWA LFPangleRangeFilter";
+//     if (!sendSopasCmdCheckResponse(sopasRequest, sopasExpectedResponse))
+//     {
+//       ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings(): sendSopasCmdCheckResponse(\"" << sopasRequest << "\") failed.");
+//       return false;
+//     }
+//   }
+
+//   // Write LFPlayerFilter
+//   if(enableLFPlayerFilter && !host_LFPlayerFilter.empty()) // otherwise not configured or supported
+//   {
+//     std::string sopasRequest = "sWN LFPlayerFilter " + host_LFPlayerFilter, sopasExpectedResponse = "sWA LFPlayerFilter";
+//     if (!sendSopasCmdCheckResponse(sopasRequest, sopasExpectedResponse))
+//     {
+//       ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings(): sendSopasCmdCheckResponse(\"" << sopasRequest << "\") failed.");
+//       return false;
+//     }
+//   }
+
+//   // Write LFPintervalFilter
+//   if(enableLFPintervalFilter && !host_LFPintervalFilter.empty()) // otherwise not configured or supported
+//   {
+//     std::string sopasRequest = "sWN LFPintervalFilter " + host_LFPintervalFilter, sopasExpectedResponse = "sWA LFPintervalFilter";
+//     if (!sendSopasCmdCheckResponse(sopasRequest, sopasExpectedResponse))
+//     {
+//       ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings(): sendSopasCmdCheckResponse(\"" << sopasRequest << "\") failed.");
+//       return false;
+//     }
+//   }
+
+//   // Apply the settings
+//   if (!sendSopasCmdCheckResponse("sMN Run", "sAN Run"))
+//   {
+//     ROS_ERROR_STREAM("## ERROR SopasServices::writeMultiScanFiltersettings(): sendSopasCmdCheckResponse(\"sMN Run\") failed.");
+//     return false;
+//   }
+//   return true;
+// }
+// #endif // SCANSEGMENT_XD_SUPPORT

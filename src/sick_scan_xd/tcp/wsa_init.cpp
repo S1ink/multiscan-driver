@@ -1,7 +1,7 @@
-
 #ifdef _MSC_VER
 #include <WinSock2.h>
 #endif
+
 
 class WSA_AUTO_INIT
 {
@@ -37,4 +37,3 @@ void wsa_init(void)
 {
 	s_wsa_auto_init_singleton.init();
 }
-

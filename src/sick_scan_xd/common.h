@@ -53,8 +53,9 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_COMMON_H
-#define __SICK_SCANSEGMENT_XD_COMMON_H
+
+
+#pragma once
 
 #define _USE_MATH_DEFINES
 #include <algorithm>
@@ -91,11 +92,6 @@
 
 #define SCANDATA_MSGPACK 1
 #define SCANDATA_COMPACT 2
-
-#define ROS_DEBUG_STREAM(x) /*std::cout << x << std::endl;*/
-#define ROS_INFO_STREAM(x) std::cout << x << std::endl;
-#define ROS_WARN_STREAM(x) std::cout << x << std::endl;
-#define ROS_ERROR_STREAM(x) std::cout << x << std::endl;
 
 // #if defined __ROS_VERSION && __ROS_VERSION > 1
 
@@ -158,8 +154,8 @@ namespace sick_scansegment_xd
         uint8_t lsb = p_one[0];
         uint8_t msb = p_one[3];
         bool dstTargetIsBigEndian = (lsb == 0 && msb != 0);
-        bool dstTargetIsLittleEndian = (lsb != 0 && msb == 0);
-        assert(dstTargetIsBigEndian || dstTargetIsLittleEndian);
+        // bool dstTargetIsLittleEndian = (lsb != 0 && msb == 0);
+        // assert(dstTargetIsBigEndian || dstTargetIsLittleEndian);
         return dstTargetIsBigEndian;
     }
 
@@ -182,51 +178,50 @@ namespace sick_scansegment_xd
         return stream.str();
     }
 
-    /*
-     * @brief Returns true, if a file can be opened for reading, otherwise false.
-     * @param[in] filename filename incl. path
-     */
-    static bool FileReadable(const std::string& filename)
-    {
-        std::ifstream filestream(filename);
-        bool fileexists = filestream.is_open();
-        filestream.close();
-        return fileexists;
-    }
+    // /*
+    //  * @brief Returns true, if a file can be opened for reading, otherwise false.
+    //  * @param[in] filename filename incl. path
+    //  */
+    // static bool FileReadable(const std::string& filename)
+    // {
+    //     std::ifstream filestream(filename);
+    //     bool fileexists = filestream.is_open();
+    //     filestream.close();
+    //     return fileexists;
+    // }
 
-    /*
-     * @brief Creates a folder
-     * @param[in] folder directory name incl. path
-     */
-    static bool MkDir(const std::string& folder)
-    {
-        if (!folder.empty() && folder != ".")
-        {
-            std::string path = folder;
-            #ifdef _MSC_VER
-            std::replace(path.begin(), path.end(), '/', '\\');
-            return (::_mkdir(path.c_str()) == 0);
-            #else
-            std::replace(path.begin(), path.end(), '\\', '/');
-            return (mkdir(path.c_str(), 0777) == 0);
-            #endif
-        }
-        return false;
-    }
+    // /*
+    //  * @brief Creates a folder
+    //  * @param[in] folder directory name incl. path
+    //  */
+    // static bool MkDir(const std::string& folder)
+    // {
+    //     if (!folder.empty() && folder != ".")
+    //     {
+    //         std::string path = folder;
+    //         #ifdef _MSC_VER
+    //         std::replace(path.begin(), path.end(), '/', '\\');
+    //         return (::_mkdir(path.c_str()) == 0);
+    //         #else
+    //         std::replace(path.begin(), path.end(), '\\', '/');
+    //         return (mkdir(path.c_str(), 0777) == 0);
+    //         #endif
+    //     }
+    //     return false;
+    // }
 
-    /*
-     * @brief Extracts and returns the name of a file without optional path and extension.
-     * Example: FilenameNoPathNoExtension("../input/example.msg") returns "example"
-     */
-    static std::string FilenameNoPathNoExtension(const std::string& filepath)
-    {
-        size_t sep_pos = filepath.find_last_of("/\\");
-        std::string name = ((sep_pos != std::string::npos) ? (filepath.substr(sep_pos + 1)) : filepath);
-        size_t ext_pos = name.rfind('.');
-        if (ext_pos != std::string::npos)
-            name = name.substr(0, ext_pos);
-        return name;
-    }
+    // /*
+    //  * @brief Extracts and returns the name of a file without optional path and extension.
+    //  * Example: FilenameNoPathNoExtension("../input/example.msg") returns "example"
+    //  */
+    // static std::string FilenameNoPathNoExtension(const std::string& filepath)
+    // {
+    //     size_t sep_pos = filepath.find_last_of("/\\");
+    //     std::string name = ((sep_pos != std::string::npos) ? (filepath.substr(sep_pos + 1)) : filepath);
+    //     size_t ext_pos = name.rfind('.');
+    //     if (ext_pos != std::string::npos)
+    //         name = name.substr(0, ext_pos);
+    //     return name;
+    // }
 
 } // namespace sick_scansegment_xd
-#endif // __SICK_SCANSEGMENT_XD_COMMON_H

@@ -54,8 +54,8 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_UDP_RECEIVER_H
-#define __SICK_SCANSEGMENT_XD_UDP_RECEIVER_H
+
+#pragma once
 
 #include "common.h"
 #include "fifo.h"
@@ -77,47 +77,47 @@ namespace sick_scansegment_xd
     {
     public:
 
-        /*
-         * @brief Default constructor.
-         */
-        UdpReceiver();
+        // /*
+        //  * @brief Default constructor.
+        //  */
+        // UdpReceiver();
 
-        /*
-         * @brief Default destructor.
-         */
-        ~UdpReceiver();
+        // /*
+        //  * @brief Default destructor.
+        //  */
+        // ~UdpReceiver();
 
-        /*
-         * @brief Initializes an udp socket to a sender.
-         * @param[in] udp_sender ip address of the udp sender, f.e. "127.0.0.1" (localhost, loopback)
-         * @param[in] udp_port ip port, f.e. 2115 (default port for multiScan136 emulator)
-         * @param[in] udp_input_fifolength max. input fifo length (-1: unlimited, default: 20 for buffering 1 second at 20 Hz), elements will be removed from front if number of elements exceeds the fifo_length
-         * @param[in] verbose true: enable debug output, false: quiet mode (default)
-         * @param[in] export_udp_msg: true: export binary udp and msgpack data to file (*.udp and *.msg), default: false
-         * @param[in] scandataformat ScanDataFormat: 1 for msgpack or 2 for compact scandata, default: 1
-         * @param[in] PayloadFifo* fifo: Fifo to handle payload data
-         */
-        bool Init(const std::string& udp_sender, int udp_port, int udp_input_fifolength = 20, bool verbose = false, bool export_udp_msg = false, int scandataformat = 1, PayloadFifo* fifo = 0);
+        // /*
+        //  * @brief Initializes an udp socket to a sender.
+        //  * @param[in] udp_sender ip address of the udp sender, f.e. "127.0.0.1" (localhost, loopback)
+        //  * @param[in] udp_port ip port, f.e. 2115 (default port for multiScan136 emulator)
+        //  * @param[in] udp_input_fifolength max. input fifo length (-1: unlimited, default: 20 for buffering 1 second at 20 Hz), elements will be removed from front if number of elements exceeds the fifo_length
+        //  * @param[in] verbose true: enable debug output, false: quiet mode (default)
+        //  * @param[in] export_udp_msg: true: export binary udp and msgpack data to file (*.udp and *.msg), default: false
+        //  * @param[in] scandataformat ScanDataFormat: 1 for msgpack or 2 for compact scandata, default: 1
+        //  * @param[in] PayloadFifo* fifo: Fifo to handle payload data
+        //  */
+        // bool Init(const std::string& udp_sender, int udp_port, int udp_input_fifolength = 20, bool verbose = false, bool export_udp_msg = false, int scandataformat = 1, PayloadFifo* fifo = 0);
 
-        /*
-         * @brief Starts receiving udp packages in a background thread and pops msgpack data packages to the fifo.
-         */
-        bool Start(void);
+        // /*
+        //  * @brief Starts receiving udp packages in a background thread and pops msgpack data packages to the fifo.
+        //  */
+        // bool Start(void);
 
-        /*
-         * @brief Stops the udp receiver thread
-         */
-        void Stop(bool do_join = true);
+        // /*
+        //  * @brief Stops the udp receiver thread
+        //  */
+        // void Stop(bool do_join = true);
 
-        /*
-         * @brief Stop to receive data and shutdown the udp socket
-         */
-        void Close(void);
+        // /*
+        //  * @brief Stop to receive data and shutdown the udp socket
+        //  */
+        // void Close(void);
 
-        /*
-         * @brief Returns the Fifo storing the msgpack data received by this udp receiver.
-         */
-        PayloadFifo* Fifo(void) { return m_fifo_impl; }
+        // /*
+        //  * @brief Returns the Fifo storing the msgpack data received by this udp receiver.
+        //  */
+        // PayloadFifo* Fifo(void) { return m_fifo_impl; }
 
         /*
          * @brief Converts a payload to a hex string
@@ -135,33 +135,32 @@ namespace sick_scansegment_xd
 
     private:
 
-        /*
-         * @brief Thread callback, runs the receiver for udp packages and pops msgpack data packages to the fifo.
-         */
-        bool Run(void);
+        // /*
+        //  * @brief Thread callback, runs the receiver for udp packages and pops msgpack data packages to the fifo.
+        //  */
+        // bool Run(void);
 
-        /*
-         * Configuration and parameter
-         */
-        bool m_verbose;                           // true: enable debug output, false: quiet mode (default)
-        int m_udp_recv_buffer_size;               // size of buffer to receive udp packages
-        std::vector<uint8_t> m_udp_msg_start_seq; // any udp message from multiScan136 starts with 15 byte ".....class.Scan"
-        double m_udp_timeout_recv_nonblocking;    // in normal mode we receive udp datagrams non-blocking with timeout to enable sync with msgpack start
-        double m_udp_sender_timeout;              // if no udp packages received within some seconds, we switch to blocking udp receive
-        bool m_export_udp_msg;                    // true : export binary udpand msgpack data to file(*.udpand* .msg), default: false
-        int m_scandataformat;                     // ScanDataFormat: 1 for msgpack or 2 for compact scandata, default: 1
+        // /*
+        //  * Configuration and parameter
+        //  */
+        // bool m_verbose;                           // true: enable debug output, false: quiet mode (default)
+        // int m_udp_recv_buffer_size;               // size of buffer to receive udp packages
+        // std::vector<uint8_t> m_udp_msg_start_seq; // any udp message from multiScan136 starts with 15 byte ".....class.Scan"
+        // double m_udp_timeout_recv_nonblocking;    // in normal mode we receive udp datagrams non-blocking with timeout to enable sync with msgpack start
+        // double m_udp_sender_timeout;              // if no udp packages received within some seconds, we switch to blocking udp receive
+        // bool m_export_udp_msg;                    // true : export binary udpand msgpack data to file(*.udpand* .msg), default: false
+        // int m_scandataformat;                     // ScanDataFormat: 1 for msgpack or 2 for compact scandata, default: 1
 
-        /*
-         * Member data to run a udp receiver
-         */
-        UdpReceiverSocketImpl* m_socket_impl;     // implementation of the udp receiver socket
-        PayloadFifo* m_fifo_impl;                 // implementation of a thread safe fifo buffer to share the payload of udp packages
-        bool m_fifo_impl_created;                 // m_fifo_impl has been created and needs be deleted at exit
-        std::thread* m_receiver_thread;           // background thread to receive udp packages
-        bool m_run_receiver_thread;               // flag to start and stop the udp receiver thread
+        // /*
+        //  * Member data to run a udp receiver
+        //  */
+        // UdpReceiverSocketImpl* m_socket_impl;     // implementation of the udp receiver socket
+        // PayloadFifo* m_fifo_impl;                 // implementation of a thread safe fifo buffer to share the payload of udp packages
+        // bool m_fifo_impl_created;                 // m_fifo_impl has been created and needs be deleted at exit
+        // std::thread* m_receiver_thread;           // background thread to receive udp packages
+        // bool m_run_receiver_thread;               // flag to start and stop the udp receiver thread
 
 
     };  // class UdpReceiver
 
 }   // namespace sick_scansegment_xd
-#endif // __SICK_SCANSEGMENT_XD_UDP_RECEIVER_H

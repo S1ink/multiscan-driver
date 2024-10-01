@@ -54,10 +54,11 @@
 */
 #include "softwarePLL.h"
 #include "compact_parser.h"
-// #include "config.h"
 #include "udp_receiver.h"
+#include "sick_ros_wrapper.h"
 
 #define TARGET_IS_LITTLE_ENDIAN 1
+
 
 union COMPACT_4BYTE_UNION
 {
@@ -203,20 +204,20 @@ std::string sick_scansegment_xd::CompactModuleMetaData::to_string() const
     description << ", NumberOfBeamsPerScan:" << NumberOfBeamsPerScan;
     description << ", NumberOfEchosPerBeam:" << NumberOfEchosPerBeam;
     description << ", TimeStampStart:[";
-    for(int n = 0; n < TimeStampStart.size(); n++)
-        description << (n>0?",":"") << TimeStampStart[n];
+    for(size_t n = 0; n < TimeStampStart.size(); n++)
+        description << (n > 0 ? "," : "") << TimeStampStart[n];
     description << "], TimeStampStop:[";
-    for(int n = 0; n < TimeStampStop.size(); n++)
-        description << (n>0?",":"") << TimeStampStop[n];
+    for(size_t n = 0; n < TimeStampStop.size(); n++)
+        description << (n > 0 ? "," : "") << TimeStampStop[n];
     description << "], Phi:[";
-    for(int n = 0; n < Phi.size(); n++)
-        description << (n>0?",":"") << Phi[n];
+    for(size_t n = 0; n < Phi.size(); n++)
+        description << (n > 0 ? "," : "") << Phi[n];
     description << "], ThetaStart:[";
-    for(int n = 0; n < ThetaStart.size(); n++)
-        description << (n>0?",":"") << ThetaStart[n];
+    for(size_t n = 0; n < ThetaStart.size(); n++)
+        description << (n > 0 ? "," : "") << ThetaStart[n];
     description << "], ThetaStop:[";
-    for(int n = 0; n < ThetaStop.size(); n++)
-        description << (n>0?",":"") << ThetaStop[n];
+    for(size_t n = 0; n < ThetaStop.size(); n++)
+        description << (n > 0 ? "," : "") << ThetaStop[n];
     description << "], DistanceScalingFactor:" << DistanceScalingFactor;
     description << ", NextModuleSize:" << NextModuleSize;
     description << ", Availability:" << (int)Availability;
@@ -230,14 +231,14 @@ std::string sick_scansegment_xd::CompactModuleMetaData::to_string() const
 std::string sick_scansegment_xd::CompactModuleMeasurementData::to_string() const
 {
     std::stringstream description;
-    for(int group_idx = 0; group_idx < scandata.size(); group_idx++)
+    for(size_t group_idx = 0; group_idx < scandata.size(); group_idx++)
     {
         description << (group_idx > 0 ? "," : "") << "scandata[" << group_idx << "]=[";
         const std::vector<ScanSegmentParserOutput::Scanline>& scanlines = scandata[group_idx].scanlines;
-        for(int line_idx = 0; line_idx < scanlines.size(); line_idx++)
+        for(size_t line_idx = 0; line_idx < scanlines.size(); line_idx++)
         {
             description << (line_idx > 0 ? "," : "") << "scanline[" << line_idx << "]=[";
-            for(int point_idx = 0; point_idx < scanlines[line_idx].points.size(); point_idx++)
+            for(size_t point_idx = 0; point_idx < scanlines[line_idx].points.size(); point_idx++)
             {
                 const ScanSegmentParserOutput::LidarPoint& point = scanlines[line_idx].points[point_idx];
                 description << (point_idx > 0 ? "," : "") << "(";
@@ -452,18 +453,18 @@ int sick_scansegment_xd::CompactDataParser::GetLayerIDfromElevation(float layer_
     {
         int layer_idx = 0;
         int elevation_dist = std::abs(layer_elevation_mdeg - s_layer_elevation_table_mdeg[layer_idx]);
-        for(int n = 1; n < s_layer_elevation_table_mdeg.size(); n++)
+        for(size_t n = 1; n < s_layer_elevation_table_mdeg.size(); n++)
         {
-        int dist = std::abs(layer_elevation_mdeg - s_layer_elevation_table_mdeg[n]);
-        if (elevation_dist > dist)
-        {
-            elevation_dist = dist;
-            layer_idx = n;
-        }
-        else
-        {
-            break;
-        }
+            int dist = std::abs(layer_elevation_mdeg - s_layer_elevation_table_mdeg[n]);
+            if (elevation_dist > dist)
+            {
+                elevation_dist = dist;
+                layer_idx = static_cast<int>(n);
+            }
+            else
+            {
+                break;
+            }
         }
         return layer_idx;
     }
@@ -488,7 +489,7 @@ int sick_scansegment_xd::CompactDataParser::GetLayerIDfromElevation(float layer_
 */
 float sick_scansegment_xd::CompactDataParser::GetElevationDegFromLayerIdx(int layer_idx)
 {
-    if (layer_idx >= 0 && layer_idx < s_layer_elevation_table_mdeg.size())
+    if (layer_idx >= 0 && static_cast<size_t>(layer_idx) < s_layer_elevation_table_mdeg.size())
     {
         return 0.001f * s_layer_elevation_table_mdeg[layer_idx];
     }
@@ -574,7 +575,7 @@ bool sick_scansegment_xd::CompactDataParser::ParseModuleMeasurementData(const ui
         {
             float layer_elevation = lut_layer_elevation[layer_idx];
             float layer_azimuth_start = lut_layer_azimuth_start[layer_idx];
-            float layer_azimuth_stop = lut_layer_azimuth_stop[layer_idx];
+            // float layer_azimuth_stop = lut_layer_azimuth_stop[layer_idx];
             float layer_azimuth_delta = lut_layer_azimuth_delta[layer_idx];
             uint64_t lidar_timestamp_microsec_start = lut_layer_lidar_timestamp_microsec_start[layer_idx];
             uint64_t lidar_timestamp_microsec_stop = lut_layer_lidar_timestamp_microsec_stop[layer_idx];
@@ -794,18 +795,18 @@ bool sick_scansegment_xd::CompactDataParser::ParseSegment(const uint8_t* payload
     if (segment_data && verbose > 0)
     {
         ROS_INFO_STREAM("CompactDataParser: " << segment_data->segmentModules.size() << " modules");
-        for(int module_idx = 0; module_idx < segment_data->segmentModules.size(); module_idx++)
+        for(size_t module_idx = 0; module_idx < segment_data->segmentModules.size(); module_idx++)
         {
             const std::vector<ScanSegmentParserOutput::Scangroup>& scandata = segment_data->segmentModules[module_idx].moduleMeasurement.scandata;
             ROS_INFO_STREAM("    CompactDataParser (module " << module_idx << "): " << scandata.size() << " groups");
-            for(int group_idx = 0; group_idx < scandata.size(); group_idx++)
+            for(size_t group_idx = 0; group_idx < scandata.size(); group_idx++)
             {
                 ROS_INFO_STREAM("        CompactDataParser (module " << module_idx << ", group " << group_idx << "): " << scandata[group_idx].scanlines.size() << " lines");
-                for(int line_idx = 0; line_idx < scandata[group_idx].scanlines.size(); line_idx++)
+                for(size_t line_idx = 0; line_idx < scandata[group_idx].scanlines.size(); line_idx++)
                 {
                     const std::vector<ScanSegmentParserOutput::LidarPoint>& points = scandata[group_idx].scanlines[line_idx].points;
                     ROS_INFO_STREAM("        CompactDataParser (module " << module_idx << ", group " << group_idx << ", line " << line_idx << "): " << points.size() << " points");
-                    for(int point_idx = 0; point_idx < points.size(); point_idx++)
+                    for(size_t point_idx = 0; point_idx < points.size(); point_idx++)
                     {
                         ROS_INFO_STREAM("        [" << points[point_idx].x << "," << points[point_idx].y << "," << points[point_idx].z << "," << points[point_idx].range << "," << points[point_idx].azimuth << "," << points[point_idx].elevation << "," << points[point_idx].groupIdx << "," << points[point_idx].pointIdx << "]");
                     }
@@ -870,6 +871,8 @@ return success;
 bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& payload, fifo_timestamp system_timestamp, 
     ScanSegmentParserOutput& result, int imu_latency_microsec, bool use_software_pll, bool verbose)
 {
+    (void)verbose;
+
     // Parse segment data
     sick_scansegment_xd::CompactSegmentData segment_data;
     uint32_t payload_length_bytes = 0, num_bytes_required  = 0;
@@ -884,7 +887,7 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
     result.imudata = segment_data.segmentHeader.imudata;
     result.segmentIndex = 0;
     result.telegramCnt = segmentHeader.telegramCounter;
-    for (int module_idx = 0; module_idx < segment_data.segmentModules.size(); module_idx++)
+    for (size_t module_idx = 0; module_idx < segment_data.segmentModules.size(); module_idx++)
     {
         sick_scansegment_xd::CompactModuleMetaData& moduleMetadata = segment_data.segmentModules[module_idx].moduleMetadata;
         sick_scansegment_xd::CompactModuleMeasurementData& moduleMeasurement = segment_data.segmentModules[module_idx].moduleMeasurement;
@@ -893,16 +896,16 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
             ROS_ERROR_STREAM("## ERROR CompactDataParser::Parse(): invalid moduleMeasurement (ignored)");
             continue;
         }
-        for (int measurement_idx = 0; measurement_idx < moduleMeasurement.scandata.size(); measurement_idx++)
+        for (size_t measurement_idx = 0; measurement_idx < moduleMeasurement.scandata.size(); measurement_idx++)
         {
             ScanSegmentParserOutput::Scangroup& scandata = moduleMeasurement.scandata[measurement_idx];
             // Apply optional range filter and optional transform
-            for(int line_idx = 0; line_idx < scandata.scanlines.size(); line_idx++)
+            for(size_t line_idx = 0; line_idx < scandata.scanlines.size(); line_idx++)
             {
                 std::vector<ScanSegmentParserOutput::LidarPoint>& points_in = scandata.scanlines[line_idx].points;
                 std::vector<ScanSegmentParserOutput::LidarPoint> points_out;
                 points_out.reserve(points_in.size());
-                for(int point_idx = 0; point_idx < points_in.size(); point_idx++)
+                for(size_t point_idx = 0; point_idx < points_in.size(); point_idx++)
                 {
                     points_out.push_back(points_in[point_idx]);
                 }
@@ -911,14 +914,14 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
             // result.scandata.push_back(scandata);
             // Reorder lidar points by layer id (groupIdx) and echoIdx (identical to the msgpack scandata)
             // result.scandata[groupIdx] = all scandata of layer <groupIdx> appended to one scanline
-            for(int line_idx = 0; line_idx < scandata.scanlines.size(); line_idx++)
+            for(size_t line_idx = 0; line_idx < scandata.scanlines.size(); line_idx++)
             {
                 std::vector<ScanSegmentParserOutput::LidarPoint>& points = scandata.scanlines[line_idx].points;
-                for(int point_idx = 0; point_idx < points.size(); point_idx++)
+                for(size_t point_idx = 0; point_idx < points.size(); point_idx++)
                 {
                     ScanSegmentParserOutput::LidarPoint& point = points[point_idx];
-                    int groupIdx = point.groupIdx;
-                    int echoIdx = point.echoIdx;
+                    size_t groupIdx = point.groupIdx;
+                    size_t echoIdx = point.echoIdx;
                     while(result.scandata.size() <= groupIdx)
                     {
                         result.scandata.push_back(ScanSegmentParserOutput::Scangroup());
@@ -946,7 +949,7 @@ bool sick_scansegment_xd::CompactDataParser::Parse(const std::vector<uint8_t>& p
         {
             result.segmentIndex = moduleMetadata.SegmentCounter;
         }
-        else if (result.segmentIndex != moduleMetadata.SegmentCounter)
+        else if (static_cast<int64_t>(result.segmentIndex) != static_cast<int64_t>(moduleMetadata.SegmentCounter))
         {
             ROS_WARN_STREAM("## WARNING CompactDataParser::Parse(): different SegmentCounter in module 0 and module " << module_idx << " currently not supported,"
                 << " scandata of segment " << moduleMetadata.SegmentCounter << " appended to segment " << result.segmentIndex);

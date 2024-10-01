@@ -82,6 +82,7 @@
 #include "softwarePLL.h"
 // #include "config.h"
 #include "msgpack_parser.h"
+#include "sick_ros_wrapper.h"
 
 /** normalizes an angle to [ -PI , +PI ] */
 static float normalizeAngle(float angle_rad)
@@ -256,14 +257,14 @@ static std::string printMsgPack(const msgpack11::MsgPack& msg)
 	if (!msg.array_items().empty())
 	{
 		s << "array[";
-		for (int n = 0; n < msg.array_items().size(); n++)
+		for (size_t n = 0; n < msg.array_items().size(); n++)
 			s << (n > 0 ? "," : "") << printMsgPack(msg.array_items()[n]);
 		s << "]";
 	}
 	if (!msg.binary_items().empty())
 	{
 		s << "binary[";
-		for (int n = 0; n < msg.binary_items().size(); n++)
+		for (size_t n = 0; n < msg.binary_items().size(); n++)
 			s << (n > 0 ? "," : "") << printMsgPack(msg.binary_items()[n]);
 		s << "]";
 	}
@@ -399,7 +400,7 @@ public:
 		if (!m_data.empty())
 		{
 			s << m_data[0];
-			for(int n = 1; n < m_data.size(); n++)
+			for(size_t n = 1; n < m_data.size(); n++)
 				s << "," << m_data[n];
 		}
 		return s.str();
@@ -411,7 +412,7 @@ public:
 		if (!m_data.empty())
 		{
 			s << rad2deg(m_data[0]);
-			for(int n = 1; n < m_data.size(); n++)
+			for(size_t n = 1; n < m_data.size(); n++)
 				s << "," << rad2deg(m_data[n]);
 		}
 		return s.str();
@@ -637,7 +638,7 @@ bool sick_scansegment_xd::MsgPackParser::Parse(std::istream& msgpack_istream, fi
         // std::cout << "root_data: " << printMsgPack(root_data) << std::endl << "root_data.array_items().size(): " << root_data.array_items().size() << ", root_data.object_items().size(): " << root_data.object_items().size() << std::endl;
         // std::cout << "group_data.array_items().size(): " << group_data.array_items().size() << ", group_data.object_items().size(): " << group_data.object_items().size() << std::endl;
         result.scandata.reserve(group_data.array_items().size());
-        for (int groupIdx = 0; groupIdx < group_data.array_items().size(); groupIdx++)
+        for (size_t groupIdx = 0; groupIdx < group_data.array_items().size(); groupIdx++)
         {
             // Get ChannelPhi, ChannelTheta, DistValues and RssiValues for each group
             const msgpack11::MsgPack& groupMsg = group_data.array_items()[groupIdx];
@@ -679,9 +680,9 @@ bool sick_scansegment_xd::MsgPackParser::Parse(std::istream& msgpack_istream, fi
             MsgPackElement channelThetaMsgElement(channelThetaMsg->second.object_items());
             std::vector<MsgPackElement> distValuesDataMsg(distValuesMsg->second.array_items().size());
             std::vector<MsgPackElement> rssiValuesDataMsg(rssiValuesMsg->second.array_items().size());
-            for (int n = 0; n < distValuesMsg->second.array_items().size(); n++)
+            for (size_t n = 0; n < distValuesMsg->second.array_items().size(); n++)
                 distValuesDataMsg[n] = MsgPackElement(distValuesMsg->second.array_items()[n].object_items());
-            for (int n = 0; n < rssiValuesMsg->second.array_items().size(); n++)
+            for (size_t n = 0; n < rssiValuesMsg->second.array_items().size(); n++)
                 rssiValuesDataMsg[n] = MsgPackElement(rssiValuesMsg->second.array_items()[n].object_items());
         
             // Get optional property values
@@ -689,13 +690,13 @@ bool sick_scansegment_xd::MsgPackParser::Parse(std::istream& msgpack_istream, fi
             if (propertiesMsg != dataMsg->second.object_items().end()) // property values available
             {
                 propertyValues = std::vector<std::vector<uint8_t>>(propertiesMsg->second.array_items().size());
-                for (int n = 0; n < propertiesMsg->second.array_items().size(); n++)
+                for (size_t n = 0; n < propertiesMsg->second.array_items().size(); n++)
                 {
                     const MsgPackElement& propertyMsgPackElement = MsgPackElement(propertiesMsg->second.array_items()[n].object_items());
                     propertyValues[n] = std::vector<uint8_t>(propertyMsgPackElement.data->binary_items().size(), 0);
                     if (propertyMsgPackElement.elemSz->int_value() == 1 && propertyMsgPackElement.elemTypes->int_value() == MsgpackKeyToInt_uint8 && propertyMsgPackElement.data->binary_items().size() > 0)
                     {
-                        for(int m = 0; m < propertyValues[n].size(); m++)
+                        for(size_t m = 0; m < propertyValues[n].size(); m++)
                         {
                             propertyValues[n][m] = propertyMsgPackElement.data->binary_items()[m];
                         }
@@ -713,14 +714,14 @@ bool sick_scansegment_xd::MsgPackParser::Parse(std::istream& msgpack_istream, fi
             MsgPackToFloat32VectorConverter channelTheta(channelThetaMsgElement, dstIsBigEndian);
             std::vector<MsgPackToFloat32VectorConverter> distValues(distValuesDataMsg.size());
             std::vector<MsgPackToFloat32VectorConverter> rssiValues(rssiValuesDataMsg.size());
-            for (int n = 0; n < distValuesDataMsg.size(); n++)
+            for (size_t n = 0; n < distValuesDataMsg.size(); n++)
                 distValues[n] = MsgPackToFloat32VectorConverter(distValuesDataMsg[n], dstIsBigEndian);
-            for (int n = 0; n < rssiValuesDataMsg.size(); n++)
+            for (size_t n = 0; n < rssiValuesDataMsg.size(); n++)
                 rssiValues[n] = MsgPackToFloat32VectorConverter(rssiValuesDataMsg[n], dstIsBigEndian);
             assert(channelPhi.data().size() == 1 && channelTheta.data().size() > 0 && distValues.size() == iEchoCount && rssiValues.size() == iEchoCount);
 
         // Check optional propertyValues: if available, we expect as many properties as we have points
-            for (int n = 0; n < propertyValues.size(); n++) 
+            for (size_t n = 0; n < propertyValues.size(); n++) 
             {
                 // ROS_DEBUG_STREAM("MsgPackParser::Parse(): " << (distValues[n].data().size()) << " dist values, " << (rssiValues[n].data().size()) << " rssi values, " << (propertyValues[n].size()) << " property values (" << (n+1) << ". echo)");
             if (propertyValues[n].size() != distValues[n].data().size())
@@ -761,8 +762,8 @@ bool sick_scansegment_xd::MsgPackParser::Parse(std::istream& msgpack_istream, fi
                 for (int pointIdx = 0; pointIdx < iPointCount; pointIdx++)
                 {
                     uint8_t reflectorbit = 0;
-                    for (int n = 0; n < propertyValues.size(); n++)
-                        if (pointIdx < propertyValues[n].size())
+                    for (size_t n = 0; n < propertyValues.size(); n++)
+                        if (static_cast<size_t>(pointIdx) < propertyValues[n].size())
                         reflectorbit |= ((propertyValues[n][pointIdx]) & 0x01); // reflector bit is set, if a reflector is detected on any number of echos
                     float dist = 0.001f * distValues[echoIdx].data()[pointIdx]; // convert distance to meter
                     float intensity = rssiValues[echoIdx].data()[pointIdx];
@@ -770,7 +771,7 @@ bool sick_scansegment_xd::MsgPackParser::Parse(std::istream& msgpack_istream, fi
                     float y = dist * sin_azimuth[pointIdx] * cos_elevation;
                     float z = dist * sin_elevation;
                     float azimuth = channelTheta.data()[pointIdx];
-                    float azimuth_norm = normalizeAngle(azimuth);
+                    // float azimuth_norm = normalizeAngle(azimuth);
                     uint64_t lidar_timestamp_microsec = lut_lidar_timestamp_microsec[pointIdx];
                     scanline.points.push_back(sick_scansegment_xd::ScanSegmentParserOutput::LidarPoint(x, y, z, intensity, dist, azimuth, elevation, groupIdx, echoIdx, pointIdx, lidar_timestamp_microsec, reflectorbit));
                 }

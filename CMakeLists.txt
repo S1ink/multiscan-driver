@@ -38,10 +38,22 @@ add_library(scansegment_xd STATIC
   "src/sick_scan_xd/compact_parser.cpp"
   "src/sick_scan_xd/msgpack_parser.cpp"
   "src/sick_scan_xd/scansegment_parser_output.cpp"
+  "src/sick_scan_xd/sick_scan_common_nw.cpp"
+  "src/sick_scan_xd/sick_scan_common_tcp.cpp"
+  "src/sick_scan_xd/sopas_services.cpp"
   "src/sick_scan_xd/softwarePLL.cpp"
   "src/sick_scan_xd/udp_receiver.cpp"
   "src/sick_scan_xd/udp_sockets.cpp"
-  "src/sick_scan_xd/wsa_init.cpp")
+  "src/sick_scan_xd/tcp/colaa.cpp"
+  "src/sick_scan_xd/tcp/colab.cpp"
+  "src/sick_scan_xd/tcp/errorhandler.cpp"
+  "src/sick_scan_xd/tcp/Mutex.cpp"
+  "src/sick_scan_xd/tcp/SickThread.cpp"
+  "src/sick_scan_xd/tcp/SopasBase.cpp"
+  "src/sick_scan_xd/tcp/tcp.cpp"
+  "src/sick_scan_xd/tcp/Time.cpp"
+  "src/sick_scan_xd/tcp/toolbox.cpp"
+  "src/sick_scan_xd/tcp/wsa_init.cpp")
 ament_target_dependencies(scansegment_xd)
 
 add_executable(multiscan_driver "src/multiscan_driver.cpp")

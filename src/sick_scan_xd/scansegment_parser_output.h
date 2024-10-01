@@ -77,8 +77,13 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_PARSER_OUTPUT_H
-#define __SICK_SCANSEGMENT_XD_PARSER_OUTPUT_H
+
+#pragma once
+
+#include <vector>
+#include <string>
+#include <cstdint>
+
 
 namespace sick_scansegment_xd
 {
@@ -203,4 +208,3 @@ namespace sick_scansegment_xd
     */
     std::string Timestamp(const std::chrono::system_clock::time_point& now);
 }
-#endif // __SICK_SCANSEGMENT_XD_PARSER_OUTPUT_H

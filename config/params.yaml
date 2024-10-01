@@ -3,8 +3,13 @@
 
     lidar_frame: "lidar_link"
     lidar_hostname: ""
+    driver_hostname: ""
     lidar_udp_port: 2115
+    sopas_tcp_port: 2111
     use_msgpack: false
+    use_cola_binary: true
     udp_reset_timeout: 2.
     udp_receive_timeout: 1.
+    sopas_read_timeout: 3.
+    error_restart_timeout: 3.
     max_segment_buffers: 3

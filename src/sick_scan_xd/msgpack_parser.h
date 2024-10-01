@@ -75,12 +75,11 @@
  *  Copyright 2020 Ing.-Buero Dr. Michael Lehning
  *
  */
-#ifndef __SICK_SCANSEGMENT_XD_MSGPACK_PARSER_H
-#define __SICK_SCANSEGMENT_XD_MSGPACK_PARSER_H
+
+#pragma once
 
 #include "common.h"
 #include "fifo.h"
-// #include "msgpack_validator.h"
 #include "scansegment_parser_output.h"
 
 namespace sick_scansegment_xd
@@ -185,4 +184,3 @@ namespace sick_scansegment_xd
 	};  // class MsgPackParser
 
 }   // namespace sick_scansegment_xd
-#endif // __SICK_SCANSEGMENT_XD_MSGPACK_PARSER_H
