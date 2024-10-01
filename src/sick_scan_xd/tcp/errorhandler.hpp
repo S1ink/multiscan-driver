@@ -4,8 +4,9 @@
  */
 #pragma once
 
-#include "BasicDatatypes.hpp"
 #include <stdexcept>	// for throw
+
+#include "BasicDatatypes.hpp"
 
 
 #define printInfoMessage(a, b)  (b ? infoMessage(a, b):doNothing())

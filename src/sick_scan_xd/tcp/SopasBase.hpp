@@ -7,18 +7,18 @@
 
 #pragma once
 
-#include "BasicDatatypes.hpp"
-// #include "sick_scan/tcp/datatypes/Scan.hpp"
-#include "tcp.hpp"
+#include <map>	// for std::map
 
+#include "BasicDatatypes.hpp"
+#include "tcp.hpp"
 #include "colaa.hpp"
 #include "colab.hpp"
-#include <map>	// for std::map
 #include "Mutex.hpp"
+
 
 namespace devices
 {
-    
+
 class SopasEventMessage;
 class SopasAnswer;
 

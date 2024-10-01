@@ -8,12 +8,15 @@
 //
 // (c) 2010 SICK AG, Hamburg, Germany
 //#define _CRT_SECURE_NO_WARNINGS
-#include "colab.hpp"
+
 #include <cstring>
 #include <cassert>
 #include <stdexcept>
 #include <stdlib.h>
 #include <limits>
+
+#include "colab.hpp"
+
 
 namespace colab
 {

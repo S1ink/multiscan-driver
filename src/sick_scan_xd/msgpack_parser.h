@@ -80,7 +80,6 @@
 
 #include "common.h"
 #include "fifo.h"
-// #include "msgpack_validator.h"
 #include "scansegment_parser_output.h"
 
 namespace sick_scansegment_xd

@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include "BasicDatatypes.hpp"
 #ifdef WIN32
 #include <sys/timeb.h>
 #include <winsock2.h> // For struct timeval
@@ -15,6 +14,9 @@
 #include <sys/time.h>
 #endif
 #include <time.h>
+
+#include "BasicDatatypes.hpp"
+
 
 // Eine Zeitspanne, in [s]
 class TimeDuration

@@ -79,7 +79,7 @@ namespace sick_scansegment_xd
          * @brief Fifo default constructor
          * @param[in] fifo_length max. fifo length (-1: unlimited, default: 20 for buffering 1 second at 20 Hz), elements will be removed from front if number of elements exceeds the fifo_length
          */
-        Fifo(int fifo_length = 20) : m_fifo_length(fifo_length), m_shutdown(false), m_num_messages_received(0), m_timestamp_last_msg_received() {}
+        Fifo(size_t fifo_length = 20) : m_fifo_length(fifo_length), m_shutdown(false), m_num_messages_received(0), m_timestamp_last_msg_received() {}
 
         /*
          * @brief Fifo destructor
@@ -174,7 +174,7 @@ namespace sick_scansegment_xd
         std::queue<fifo_element> m_queue; // queue to buffer the elements in a fifo
         std::mutex m_mutex;               // mutex to protect multithreaded queue access
         std::condition_variable m_cond;   // condition to wait and notify on push and pop
-        int m_fifo_length;                // max. fifo length (-1: unlimited, default: 20 for buffering 1 second at 20 Hz), elements will be removed from front if number of elements exceeds the fifo_length
+        size_t m_fifo_length;                // max. fifo length (-1: unlimited, default: 20 for buffering 1 second at 20 Hz), elements will be removed from front if number of elements exceeds the fifo_length
         bool m_shutdown;                  // if true, fifo is in shutdown mode and Pop returns immediately, default: false
         size_t m_num_messages_received;   // total number of messages pushed to fifo
         fifo_timestamp m_timestamp_last_msg_received; // timestamp of last message pushed to fifo
@@ -190,7 +190,7 @@ namespace sick_scansegment_xd
          * @brief PayloadFifo default constructor
          * @param[in] fifo_length max. fifo length (-1: unlimited, default: 20 for buffering 1 second at 20 Hz), elements will be removed from front if number of elements exceeds the fifo_length
          */
-        PayloadFifo(int fifo_length = 20) : Fifo<std::vector<uint8_t>>(fifo_length) {}
+        PayloadFifo(size_t fifo_length = 20) : Fifo<std::vector<uint8_t>>(fifo_length) {}
     };
 
 } // namespace sick_scansegment_xd

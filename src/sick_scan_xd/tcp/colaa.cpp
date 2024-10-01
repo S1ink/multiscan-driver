@@ -8,15 +8,17 @@
 // (c) 2011 SICK AG, Hamburg, Germany
 //#define _CRT_SECURE_NO_WARNINGS
 
-#include "colaa.hpp"
 #include <cstring>
 #include <cassert>
 #include <stdexcept>
-#include "toolbox.hpp"	// for "toString"
-#include "errorhandler.hpp"
 #include <stdlib.h>
 #include <limits>
 // #include "Trace.hpp"
+
+#include "toolbox.hpp"	// for "toString"
+#include "errorhandler.hpp"
+#include "colaa.hpp"
+
 
 namespace colaa
 {

@@ -4,16 +4,20 @@
 #pragma once
 
 #include <thread>
-#include "BasicDatatypes.hpp"
 //#include <pthread.h>
 #ifdef _MSC_VER
 //#include <unistd_win.h>
 #include <usleep.h>
 #else
-// #include <unistd.h>
+#include <unistd.h>
 #endif
 
+#include "BasicDatatypes.hpp"
+#include "../sick_ros_wrapper.h"
+
+
 extern "C" void* wrapper_prerun(void*);
+
 class ThreadWrapperBase
 {
     //pthread_t t_id;

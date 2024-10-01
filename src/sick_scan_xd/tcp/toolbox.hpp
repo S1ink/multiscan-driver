@@ -14,7 +14,9 @@
 #endif
 #include <stdlib.h>     /* for atoi() and exit() */
 #include <string.h>     /* for memset() */
+
 #include "BasicDatatypes.hpp"	// for PI
+
 
 // Konvertierung eines Hex-Zeichens -> Zahlenwert.
 int hexCharToValue(char c);

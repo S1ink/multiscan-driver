@@ -145,7 +145,7 @@ public:
     UINT16 getDatatype() {return m_datatype;}
     UINT16 getSourceId() {return m_sourceId;}
     virtual void setSourceId(UINT16 id) {m_sourceId = id;}
-    virtual const UINT32 getUsedMemory() const = 0;
+    virtual UINT32 getUsedMemory() const = 0;
     
 protected:
     UINT16 m_datatype;		// Typ dieses Datums

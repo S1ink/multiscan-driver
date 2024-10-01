@@ -16,6 +16,8 @@
 #include "sick_scan_xd/msgpack_parser.h"
 #include "sick_scan_xd/compact_parser.h"
 #include "sick_scan_xd/scansegment_parser_output.h"
+#include "sick_scan_xd/sick_scan_common_tcp.h"
+#include "sick_scan_xd/sopas_services.h"
 
 
 class MultiscanNode : public rclcpp::Node
@@ -35,15 +37,22 @@ private:
         MS100_SEGMENTS_PER_FRAME = 12U,
         MS100_POINTS_PER_SEGMENT_ECHO = 900U,   // points per segment * segments per frame = 10800 points per frame (with 1 echo)
         MS100_MAX_ECHOS_PER_POINT = 3U;         // echos get filterd when we apply different settings in the web dashboard
+
     struct
     {
         std::string lidar_frame_id;
 
         std::string lidar_hostname = "";
+        std::string driver_hostname = "";
         int lidar_udp_port = 2115;
+        // int imu_udp_port = 2115;
+        int sopas_tcp_port = 2111;
         bool use_msgpack = false;
+        bool use_cola_binary = true;
         double udp_dropout_reset_thresh = 2.;
         double udp_receive_timeout = 1.;
+        double sopas_read_timeout = 3.;
+        double error_restart_timeout = 3.;
         int max_segment_buffering = 3;
     }
     config;
@@ -76,10 +85,16 @@ MultiscanNode::MultiscanNode(bool autostart) :
 {
     util::declare_param(this, "lidar_frame", this->config.lidar_frame_id, "lidar_link");
     util::declare_param(this, "lidar_hostname", this->config.lidar_hostname, "");
+    util::declare_param(this, "driver_hostname", this->config.driver_hostname, "");
     util::declare_param(this, "lidar_udp_port", this->config.lidar_udp_port, 2115);
+    // util::declare_param(this, "imu_udp_port", this->config.imu_udp_port, 2115);
+    util::declare_param(this, "sopas_tcp_port", this->config.sopas_tcp_port, 2111);
     util::declare_param(this, "use_msgpack", this->config.use_msgpack, false);
+    util::declare_param(this, "use_cola_binary", this->config.use_cola_binary, true);
     util::declare_param(this, "udp_reset_timeout", this->config.udp_dropout_reset_thresh, 2.);
     util::declare_param(this, "udp_receive_timeout", this->config.udp_receive_timeout, 1.);
+    util::declare_param(this, "sopas_read_timeout", this->config.sopas_read_timeout, 3.);
+    util::declare_param(this, "error_restart_timeout", this->config.error_restart_timeout, 3.);
     util::declare_param(this, "max_segment_buffers", this->config.max_segment_buffering, 3);
 
     this->scan_pub = this->create_publisher<sensor_msgs::msg::PointCloud2>("lidar_scan", rclcpp::SensorDataQoS{});
@@ -167,10 +182,45 @@ void MultiscanNode::run_receiver()
 {
     while(this->is_running)
     {
-        if(this->udp_recv_socket.Init(this->config.lidar_hostname, this->config.lidar_udp_port))
+        RCLCPP_INFO(this->get_logger(),
+            "[MULTISCAN DRIVER]: Initializing connections using the following parameters:"
+            "\n\tLidar IP address: %s"
+            "\n\tDriver IP address: %s"
+            "\n\tLidar UDP port: %d"
+            "\n\tSOPAS TCP port: %d"
+            "\n\tData format: %s"
+            "\n\tCoLa configuration: %s",
+            this->config.lidar_hostname.c_str(),
+            this->config.driver_hostname.c_str(),
+            this->config.lidar_udp_port,
+            this->config.sopas_tcp_port,
+            this->config.use_msgpack ? "MsgPack" : "Compact",
+            this->config.use_cola_binary ? "Binary" : "ASCII");
+
+        if(this->udp_recv_socket.Init(/*this->config.lidar_hostname*/ "", this->config.lidar_udp_port))
         {
             RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: UDP socket created successfully");
-            // SOPAS start command
+
+            sick_scan_xd::SickScanCommonTcp sopas_tcp{
+                this->config.lidar_hostname, this->config.sopas_tcp_port, this->config.use_cola_binary ? 'B' : 'A' };
+            sick_scan_xd::SopasServices sopas_service{ &sopas_tcp, true };
+            sopas_tcp.init_device();    // TODO: can block indefinitely with valid config that doesn't actually exist
+            sopas_tcp.setReadTimeOutInMs(static_cast<size_t>(this->config.sopas_read_timeout * 1e3));
+
+            if(sopas_tcp.isConnected())
+            {
+                sopas_service.sendAuthorization();
+                sopas_service.sendMultiScanStartCmd(
+                    this->config.driver_hostname,
+                    this->config.lidar_udp_port,
+                    (2 - this->config.use_msgpack),
+                    true,
+                    this->config.lidar_udp_port);
+            }
+            else
+            {
+                RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: TCP not connected! Could not send SOPAS initialization command!");
+            }
 
             constexpr size_t RECV_BUFFER_SIZE = 64 * 1024;
             std::vector<uint8_t>
@@ -183,7 +233,7 @@ void MultiscanNode::run_receiver()
 
             try
             {
-                while(this->is_running)
+                while(this->is_running && sopas_tcp.isConnected())
                 {
                     size_t bytes_received = this->udp_recv_socket.Receive(udp_buffer, udp_recv_timeout, udp_msg_start_seq);
                     // RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: Received %ld bytes from %d", bytes_received, this->udp_recv_socket.port());
@@ -367,16 +417,29 @@ void MultiscanNode::run_receiver()
                         }
                     }
                 }
+
+                if(!sopas_tcp.isConnected())
+                {
+                    RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: SOPAS TCP connection lost - restarting...");
+                }
             }
             catch(const std::exception& e)
             {
                 RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: UDP decode loop encountered an exception - what():\n\t%s", e.what());
             }
 
-            // SOPAS stop command
+            if(sopas_tcp.isConnected())
+            {
+                sopas_service.sendAuthorization();
+                sopas_service.sendMultiScanStopCmd(true);
+            }
         }
-        RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: UDP socket creation failed - sleeping for 5 seconds.");
-        if(this->is_running) std::this_thread::sleep_for(std::chrono::seconds(5));
+
+        if(this->is_running)
+        {
+            RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: Encountered error - restarting after timeout...");
+            std::this_thread::sleep_for(std::chrono::milliseconds(static_cast<size_t>(this->config.error_restart_timeout * 1e3)));
+        }
     }
 }
 

@@ -69,13 +69,13 @@
 namespace sick_scan_xd
 {
 
-  class SickScanServices
+  class SopasServices
   {
   public:
 
-    SickScanServices(sick_scan_xd::SickScanCommonTcp* common_tcp = 0, bool use_cola_binary = true);
+    SopasServices(sick_scan_xd::SickScanCommonTcp* common_tcp = 0, bool use_cola_binary = true);
 
-    virtual ~SickScanServices();
+    virtual ~SopasServices();
 
     /*!
     * Sends the SOPAS authorization command "sMN SetAccessMode 3 F4724744".
@@ -96,7 +96,7 @@ namespace sick_scan_xd
      * @param[in] imu_enable: Imu data transfer enabled
      * @param[in] imu_udp_port: UDP port of imu data (if imu_enable is true)
      */
-    bool sendMultiScanStartCmd(const std::string& hostname, int port, int scandataformat, bool imu_enable, int imu_udp_port, int performanceprofilenumber);
+    bool sendMultiScanStartCmd(const std::string& hostname, int port, int scandataformat, bool imu_enable, int imu_udp_port, int performanceprofilenumber = 0);
 
     /*!
      * Sends the multiScan stop commands "sWN ScanDataEnable 0" and "sMN Run"
@@ -171,10 +171,10 @@ namespace sick_scan_xd
      * Member data
      */
 
-    bool m_cola_binary;                             ///< cola ascii or cola binary messages
     sick_scan_xd::SickScanCommonTcp* m_common_tcp;     ///< common tcp handler
+    bool m_cola_binary;                             ///< cola ascii or cola binary messages
     std::string m_client_authorization_pw;
 
-  }; /* class SickScanServices */
+  }; /* class SopasServices */
 
 } /* namespace sick_scan_xd */

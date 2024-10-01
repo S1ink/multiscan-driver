@@ -83,7 +83,7 @@ typedef struct sockaddr SOCKADDR;
 #define INVALID_SOCKET (-1)
 #define UNLINK unlink
 #define closesocket close
-static std::string getErrorMessage(void) { return std::to_string(errno) + " (" + std::string(strerror(errno)) + ")"; }
+static inline std::string getErrorMessage(void) { return std::to_string(errno) + " (" + std::string(strerror(errno)) + ")"; }
 #endif
 
 #include "common.h"
@@ -186,4 +186,4 @@ namespace sick_scansegment_xd
 
     };
 
-}   // namespace sick_scansegment_xd
+};   // namespace sick_scansegment_xd

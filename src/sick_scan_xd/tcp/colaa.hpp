@@ -8,6 +8,7 @@
 
 #include "BasicDatatypes.hpp"
 
+
 /**
     * Parser functions for a partly implementation of the CoLa-A
     * protocol, needed for communication with SICK sensors.

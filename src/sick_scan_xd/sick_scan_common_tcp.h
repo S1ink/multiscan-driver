@@ -214,7 +214,7 @@ public:
     };
 
 public:
-    SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, char cola_dialect_id);
+    SickScanCommonTcp(const std::string &hostname, int port, char cola_dialect_id);
     ~SickScanCommonTcp();
 
     static void disconnectFunctionS(void *obj);
@@ -224,8 +224,8 @@ public:
     void setReplyMode(int _mode);
     int getReplyMode();
 
-    int getReadTimeOutInMs();
-    void setReadTimeOutInMs(int timeOutInMs);
+    size_t getReadTimeOutInMs();
+    void setReadTimeOutInMs(size_t timeOutInMs);
 
     int getProtocolType(void);
     void setProtocolType(SopasProtocol cola_dialect_id);
@@ -296,16 +296,16 @@ protected:
     int sendSOPASCommand(const char *request, std::vector<unsigned char> *reply, int cmdLen, bool wait_for_reply = true);
 
     /// Read a datagram from the device.
-    /**
-     * \param [out] recvTimeStamp timestamp of received datagram
-     * \param [in] receiveBuffer data buffer to fill
-     * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
-     * \param [out] actual_length the actual amount of data written
-     * \param [in] isBinaryProtocol true=binary False=ASCII
-     * \param [in] datagram_keywords keyword in returned datagram, e.g. { "LMDscandata" } to get scandata telegrams, or {} (empty vector) for next received datagram
-     */
-    int get_datagram(rosTime &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
-                bool isBinaryProtocol, int *numberOfRemainingFifoEntries, const std::vector<std::string>& datagram_keywords);
+    // /**
+    //  * \param [out] recvTimeStamp timestamp of received datagram
+    //  * \param [in] receiveBuffer data buffer to fill
+    //  * \param [in] bufferSize max data size to write to buffer (result should be 0 terminated)
+    //  * \param [out] actual_length the actual amount of data written
+    //  * \param [in] isBinaryProtocol true=binary False=ASCII
+    //  * \param [in] datagram_keywords keyword in returned datagram, e.g. { "LMDscandata" } to get scandata telegrams, or {} (empty vector) for next received datagram
+    //  */
+    // int get_datagram(rosTime &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize, int *actual_length,
+    //             bool isBinaryProtocol, int *numberOfRemainingFifoEntries, const std::vector<std::string>& datagram_keywords);
 
     int readWithTimeout(size_t timeout_ms, char *buffer, int buffer_size, int *bytes_read, const std::vector<std::string>& datagram_keywords);
 
@@ -325,14 +325,13 @@ private:
 
     SopasProtocol m_protocolId;
     std::string hostname_;
-    std::string port_;
-    int timelimit_;
+    int port_;
     int m_replyMode;
 
-    int readTimeOutInMs;
     std::mutex sopasSendMutex; // mutex to lock sendSopasAndCheckAnswer
-    int m_read_timeout_millisec_default = 5000;
-    int m_read_timeout_millisec_startup = 120000;
+    size_t readTimeOutInMs;
+    size_t m_read_timeout_millisec_default = 5000;
+    size_t m_read_timeout_millisec_startup = 10000;
 
     struct ScanLayerFilterCfg // Optional ScanLayerFilter setting
     {
@@ -353,6 +352,5 @@ private:
     };
 
 };
-
 
 } /* namespace sick_scan_xd */

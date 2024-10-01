@@ -585,8 +585,11 @@ UINT32 SopasEventMessage::getPayLoadLength() const
       payLoadLength = m_frameLength - 2; // everything except the 0x02 0x03 frame
       break;
     case CoLa_B:
-      payLoadLength =
-          m_frameLength - 9; // everything except start 0x02020202(4byte), payloadLength(4byte) and checksum(1 byte)
+      payLoadLength = m_frameLength - 9; // everything except start 0x02020202(4byte), payloadLength(4byte) and checksum(1 byte)
+      break;
+    case CoLa_Unknown:
+    default:
+      break;
   }
 
   return payLoadLength;
@@ -610,6 +613,10 @@ std::string SopasEventMessage::getCommandString() const
       break;
     case CoLa_B:
       commandString = std::string((char *) &m_buffer[9], 2);
+      break;
+    case CoLa_Unknown:
+    default:
+      break;
   }
 
   return commandString;
@@ -634,6 +641,9 @@ BYTE *SopasEventMessage::getPayLoad()
       break;
     case CoLa_B:
       bufferPos = &m_buffer[8];
+      break;
+    case CoLa_Unknown:
+    default:
       break;
   }
 
@@ -669,6 +679,7 @@ INT32 SopasEventMessage::getVariableIndex()
     case CoLa_B:
       index = (INT32) (colab::decodeUINT16(bufferPos));
       break;
+    case CoLa_Unknown:
     default:
       printError("SopasEventMessage::getVariableIndex: Unknown protocol!");
   }

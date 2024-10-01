@@ -15,12 +15,15 @@
 #include <iostream>
 #include <iomanip>		// for std::setprecision
 #include <sstream>		// for std::stringstream
+
 #include "errorhandler.hpp"
 
 #ifdef _MSC_VER
 #pragma warning(disable: 4267)
 #pragma warning(disable: 4996)
 #endif
+
+
 //
 // Write a binary trace output, e.g. of buffer contents.
 // Can be used for debugging.

@@ -10,12 +10,11 @@
 #include <chrono>
 
 #include "SopasBase.hpp"
-// #include "../manager.hpp"
 #include "errorhandler.hpp"
 #include "toolbox.hpp"
 #include "Mutex.hpp"
+#include "../sick_ros_wrapper.h"
 
-#define ROS_ERROR(x)
 
 namespace devices
 {
@@ -512,8 +511,8 @@ bool SopasBase::sendCommandBuffer(UINT8* buffer, UINT16 len)
 {
 	UINT8 sendBuffer[1024];
 
-	assert (len < 1000);
-	assert (m_tcp.isOpen() == true);
+	assert(len < 1000);
+	assert(m_tcp.isOpen() == true);
 
 	// Frame the string
 	if (m_protocol == CoLa_A)
@@ -1153,7 +1152,7 @@ void SopasBase::processFrame_CoLa_A(SopasEventMessage& frame)
 	std::string command;
 	command = m_receiveBuffer[2];
 	command += m_receiveBuffer[3];
-	assert (command.length() == 2);
+	assert(command.length() == 2);
 
 	//
 	// Process asynchronous event data directly.
@@ -1558,8 +1557,8 @@ bool SopasBase::action_getScannerTypeAndVersion()
 	bool result = false;
 
 	// Clear old data.
-	m_scannerName.empty();
-	m_scannerVersion.empty();
+	result = m_scannerName.empty();
+	result = m_scannerVersion.empty();
 
 	SopasAnswer* answer = NULL;
 	result = readVariable(INDEX_DEVICE_IDENT, answer);

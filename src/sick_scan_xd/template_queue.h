@@ -83,7 +83,7 @@ protected:
       std::vector<unsigned char>& datagram = iter->data();
       uint32_t cola_b_start = 0x02020202;
       uint8_t* datagram_keyword_start = 0;
-      int datagram_keyword_maxlen = (int)datagram.size();
+      int64_t datagram_keyword_maxlen = static_cast<int64_t>(datagram.size());
       int commandIdOffset = 1;
       if(datagram.size() > 12 && memcmp(datagram.data(),&cola_b_start, sizeof(cola_b_start)) == 0)
       {
@@ -100,10 +100,10 @@ protected:
       else
         continue;
       
-      for(int keyword_idx = 0; keyword_idx < keywords.size(); keyword_idx++)
+      for(size_t keyword_idx = 0; keyword_idx < keywords.size(); keyword_idx++)
       {
         const std::string& keyword = keywords[keyword_idx];
-        if(keyword.size() <= datagram_keyword_maxlen && memcmp(datagram_keyword_start, keyword.data(), keyword.size()) == 0)
+        if(static_cast<int64_t>(keyword.size()) <= datagram_keyword_maxlen && memcmp(datagram_keyword_start, keyword.data(), keyword.size()) == 0)
         {
           // ROS_DEBUG_STREAM("Queue::findFirstByKeyword(): keyword_start=\"" << std::string((char*)datagram_keyword_start, keyword.size()) << "\", keyword=\"" << keyword << "\"");
           return true;

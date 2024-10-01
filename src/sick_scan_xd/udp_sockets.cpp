@@ -79,6 +79,7 @@ void sick_scansegment_xd::UdpReceiverSocketImpl::ForceStop()
     closesocket(m_udp_socket);
 #else
     shutdown(m_udp_socket, SHUT_RDWR);
+    closesocket(m_udp_socket);
 #endif
     m_udp_socket = INVALID_SOCKET;
 }

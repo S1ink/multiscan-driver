@@ -262,9 +262,9 @@ std::string stripControl(std::vector<unsigned char> s, int max_strlen = -1)
         }
     }
 
-    if(max_strlen > 0 && dest.size() > max_strlen)
+    if(max_strlen > 0 && dest.size() > static_cast<size_t>(max_strlen))
     {
-        dest.resize(max_strlen);
+        dest.resize(static_cast<std::size_t>(max_strlen));
         dest += "...";
     }
 
@@ -281,8 +281,8 @@ std::vector<unsigned char> stringToVector(std::string s)
     return result;
 }
 
-SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, const std::string &port, int &timelimit, char cola_dialect_id)
-    : hostname_(hostname), port_(port), timelimit_(timelimit)
+SickScanCommonTcp::SickScanCommonTcp(const std::string &hostname, int port, char cola_dialect_id)
+    : hostname_(hostname), port_(port)
 {
     if((cola_dialect_id == 'a') || (cola_dialect_id == 'A'))
     {
@@ -310,7 +310,7 @@ SickScanCommonTcp::~SickScanCommonTcp()
 int SickScanCommonTcp::reinit(int delay_millisec)
 {
     this->close_device();
-    // usleep(delay_millisec * 1000);
+    std::this_thread::sleep_for(std::chrono::milliseconds(delay_millisec));
     return 0;
 }
 
@@ -343,12 +343,12 @@ int SickScanCommonTcp::getReplyMode()
 
 
 
-void SickScanCommonTcp::setReadTimeOutInMs(int timeOutInMs)
+void SickScanCommonTcp::setReadTimeOutInMs(size_t timeOutInMs)
 {
     readTimeOutInMs = timeOutInMs;
 }
 
-int SickScanCommonTcp::getReadTimeOutInMs()
+size_t SickScanCommonTcp::getReadTimeOutInMs()
 {
     return (readTimeOutInMs);
 }
@@ -640,11 +640,10 @@ void SickScanCommonTcp::readCallbackFunction(UINT8 *buffer, UINT32 &numOfBytes)
 
 int SickScanCommonTcp::init_device()
 {
-    int portInt;
-    sscanf(port_.c_str(), "%d", &portInt);
-    m_nw.init(hostname_, portInt, disconnectFunctionS, (void *) this);
-    m_nw.setReadCallbackFunction(readCallbackFunctionS, (void *) this);
+    m_nw.init(this->hostname_, this->port_, disconnectFunctionS, (void*)this);
+    m_nw.setReadCallbackFunction(readCallbackFunctionS, (void*)this);
     m_nw.connect();
+
     return ExitSuccess;
 }
 
@@ -672,7 +671,7 @@ int SickScanCommonTcp::readWithTimeout(size_t timeout_ms, char *buffer, int buff
     }
 
     DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop(datagram_keywords);
-    if(datagramWithTimeStamp.datagram.size() > buffer_size)
+    if(datagramWithTimeStamp.datagram.size() > static_cast<std::size_t>(buffer_size))
     {
         ROS_WARN_STREAM("Length of received datagram is " << datagramWithTimeStamp.datagram.size() << " byte, exceeds buffer size (" << buffer_size << " byte), datagram truncated");
         datagramWithTimeStamp.datagram.resize(buffer_size);
@@ -774,43 +773,43 @@ int SickScanCommonTcp::sendSOPASCommand(const char *request, std::vector<unsigne
 }
 
 
-int SickScanCommonTcp::get_datagram(rosTime &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize,
-                                    int *actual_length, bool isBinaryProtocol, int *numberOfRemainingFifoEntries, const std::vector<std::string>& datagram_keywords)
-{
-    if(NULL != numberOfRemainingFifoEntries)
-    {
-        // *numberOfRemainingFifoEntries = 0;
-    }
-    this->setReplyMode(1);
+// int SickScanCommonTcp::get_datagram(rosTime &recvTimeStamp, unsigned char *receiveBuffer, int bufferSize,
+//                                     int *actual_length, bool isBinaryProtocol, int *numberOfRemainingFifoEntries, const std::vector<std::string>& datagram_keywords)
+// {
+//     if(NULL != numberOfRemainingFifoEntries)
+//     {
+//         // *numberOfRemainingFifoEntries = 0;
+//     }
+//     this->setReplyMode(1);
 
-    const int maxWaitInMs = this->getReadTimeOutInMs();
-    std::vector<unsigned char> dataBuffer;
+//     const int maxWaitInMs = this->getReadTimeOutInMs();
+//     std::vector<unsigned char> dataBuffer;
 
-    bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs, datagram_keywords);
-    if(retVal == false)
-    {
-        ROS_WARN("Timeout during waiting for new datagram");
-        return ExitError;
-    }
-    else
-    {
-        // Look into receiving queue for new Datagrams
-        DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop(datagram_keywords);
-        if(NULL != numberOfRemainingFifoEntries)
-        {
-            *numberOfRemainingFifoEntries = this->recvQueue.getNumberOfEntriesInQueue();
-        }
-        recvTimeStamp = datagramWithTimeStamp.timeStamp;
-        dataBuffer = datagramWithTimeStamp.datagram;
-    }
+//     bool retVal = this->recvQueue.waitForIncomingObject(maxWaitInMs, datagram_keywords);
+//     if(retVal == false)
+//     {
+//         ROS_WARN("Timeout during waiting for new datagram");
+//         return ExitError;
+//     }
+//     else
+//     {
+//         // Look into receiving queue for new Datagrams
+//         DatagramWithTimeStamp datagramWithTimeStamp = this->recvQueue.pop(datagram_keywords);
+//         if(NULL != numberOfRemainingFifoEntries)
+//         {
+//             *numberOfRemainingFifoEntries = this->recvQueue.getNumberOfEntriesInQueue();
+//         }
+//         recvTimeStamp = datagramWithTimeStamp.timeStamp;
+//         dataBuffer = datagramWithTimeStamp.datagram;
+//     }
 
-    // dataBuffer = this->recvQueue.pop();
-    long size = dataBuffer.size();
-    memcpy(receiveBuffer, &(dataBuffer[0]), size);
-    *actual_length = size;
+//     // dataBuffer = this->recvQueue.pop();
+//     long size = dataBuffer.size();
+//     memcpy(receiveBuffer, &(dataBuffer[0]), size);
+//     *actual_length = size;
 
-    return ExitSuccess;
-}
+//     return ExitSuccess;
+// }
 
 
 
@@ -914,7 +913,7 @@ std::vector<std::string> SickScanCommonTcp::generateExpectedAnswerString(const s
         size_t pos = expectedAnswer.find(keyWord);
         if (pos == 0)  // must be 0, if keyword has been found
         {
-            for(int n = 0; n < newKeyWords.size(); n++)
+            for(std::size_t n = 0; n < newKeyWords.size(); n++)
             {
                 expectedAnswers.push_back(expectedAnswer);
                 expectedAnswers.back().replace(pos, keyWord.length(), newKeyWords[n]);
@@ -1029,7 +1028,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
             hexTmp[0] = hexStr[i * 2];
             hexTmp[1] = hexStr[i * 2 + 1];
             hexTmp[2] = 0x00;
-            sscanf(hexTmp, "%x", &val);
+            sscanf(hexTmp, "%d", &val);
             buffer[i + 1] = (unsigned char) (0xFF & val);
             bufferLen++;
         }
@@ -1055,7 +1054,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
 
     else if (cmdAscii.find(keyWord3) != std::string::npos)
     {
-        int scanDataStatus = 0;
+        // int scanDataStatus = 0;
         int keyWord3Len = keyWord3.length();
         int dummyArr[12] = {0};
         //sWN LMDscandatacfg %02d 00 %d %d 0 0 %02d 0 0 0 1 1\x03"
@@ -1101,7 +1100,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
         char tmpStr[1024] = {0};
         char szApplStr[255] = {0};
         int keyWord4Len = keyWord4.length();
-        int scanDataStatus = 0;
+        // int scanDataStatus = 0;
         int dummy0, dummy1;
         strcpy(tmpStr, requestAscii + keyWord4Len + 2);
         sscanf(tmpStr, "%d %s %d", &dummy0, szApplStr, &dummy1);
@@ -1157,9 +1156,9 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
     else if (cmdAscii.find(keyWord6) != std::string::npos)
     {
         int adrPartArr[4];
-        int imuSetStatus = 0;
+        // int imuSetStatus = 0;
         int keyWord6Len = keyWord6.length();
-        sscanf(requestAscii + keyWord6Len + 1, " %x %x %x %x", &(adrPartArr[0]), &(adrPartArr[1]), &(adrPartArr[2]),
+        sscanf(requestAscii + keyWord6Len + 1, " %d %d %d %d", &(adrPartArr[0]), &(adrPartArr[1]), &(adrPartArr[2]),
                 &(adrPartArr[3]));
         buffer[0] = (unsigned char) (0xFF & adrPartArr[0]);
         buffer[1] = (unsigned char) (0xFF & adrPartArr[1]);
@@ -1179,7 +1178,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
     {
 #if 1
         bufferLen = 0;
-        for (int i = keyWord7.length() + 2, i_max = strlen(requestAscii) - 1; i + 3 < i_max && bufferLen < sizeof(buffer); i += 4, bufferLen++)
+        for (int i = keyWord7.length() + 2, i_max = strlen(requestAscii) - 1; i + 3 < i_max && static_cast<size_t>(bufferLen) < sizeof(buffer); i += 4, bufferLen++)
         {
             char hex_str[] = { requestAscii[i + 2], requestAscii[i + 3], '\0' };
             buffer[bufferLen] = (std::stoul(hex_str, nullptr, 16) & 0xFF);
@@ -1260,7 +1259,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
     {
         uint32_t updatetime = 0;
         int keyWord8Len = keyWord8.length();
-        sscanf(requestAscii + keyWord8Len + 1, " %d", &updatetime);
+        sscanf(requestAscii + keyWord8Len + 1, " %x", &updatetime);
         buffer[0] = (unsigned char) (0xFF & (updatetime >> 24));
         buffer[1] = (unsigned char) (0xFF & (updatetime >> 16));
         buffer[2] = (unsigned char) (0xFF & (updatetime >> 8));
@@ -1271,9 +1270,9 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
     else if (cmdAscii.find(keyWord9) != std::string::npos)
     {
         int adrPartArr[4];
-        int imuSetStatus = 0;
+        // int imuSetStatus = 0;
         int keyWord9Len = keyWord9.length();
-        sscanf(requestAscii + keyWord9Len + 1, " %x %x %x %x", &(adrPartArr[0]), &(adrPartArr[1]), &(adrPartArr[2]),
+        sscanf(requestAscii + keyWord9Len + 1, " %d %d %d %d", &(adrPartArr[0]), &(adrPartArr[1]), &(adrPartArr[2]),
                 &(adrPartArr[3]));
         buffer[0] = (unsigned char) (0xFF & adrPartArr[0]);
         buffer[1] = (unsigned char) (0xFF & adrPartArr[1]);
@@ -1295,7 +1294,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
     else if (cmdAscii.find(keyWord11) != std::string::npos)
     {
         char tmpStr[1024] = {0};
-        char szApplStr[255] = {0};
+        // char szApplStr[255] = {0};
         int keyWord11Len = keyWord11.length();
         int dummy0, dummy1,dummy2;
         strcpy(tmpStr, requestAscii + keyWord11Len + 2);
@@ -1312,7 +1311,7 @@ int SickScanCommonTcp::convertAscii2BinaryCmd(const char *requestAscii, std::vec
     {
         uint32_t fieldID = 0;
         int keyWord12Len = KeyWord12.length();
-        sscanf(requestAscii + keyWord12Len + 1, "%d", &fieldID);
+        sscanf(requestAscii + keyWord12Len + 1, "%x", &fieldID);
         bufferLen = 0;
     }
 
@@ -1551,7 +1550,8 @@ void SickScanCommonTcp::setLengthAndCRCinBinarySopasRequest(std::vector<uint8_t>
 std::string SickScanCommonTcp::getSopasCmdKeyword(const uint8_t* sopasRequest, int requestLength)
 {
     const uint32_t binary_stx = 0x02020202;
-    bool requestIsBinary = (requestLength >= sizeof(binary_stx) && memcmp(sopasRequest, &binary_stx, sizeof(binary_stx)) == 0); // Cola-B always starts with 0x02020202
+    bool requestIsBinary = ( static_cast<size_t>(requestLength) >= sizeof(binary_stx) &&
+        memcmp(sopasRequest, &binary_stx, sizeof(binary_stx)) == 0 ); // Cola-B always starts with 0x02020202
 
     int keyword_start = 0, keyword_end = 0;
     if(requestIsBinary && requestLength > 12) // 0x02020202 + { 4 byte payload length } + { 4 byte command id incl. space }
@@ -1655,7 +1655,7 @@ int SickScanCommonTcp::sendSopasAndCheckAnswer(std::vector<unsigned char> reques
             std::stringstream expectedAnswers;
             std::vector<std::string> searchPattern = SickScanCommonTcp::generateExpectedAnswerString(requestStr);
 
-            for(int n = 0; result != 0 && n < searchPattern.size(); n++)
+            for(size_t n = 0; result != 0 && n < searchPattern.size(); n++)
             {
                 if (answerStr.find(searchPattern[n]) != std::string::npos)
                 {
@@ -1683,12 +1683,12 @@ int SickScanCommonTcp::sendSopasAndCheckAnswer(std::vector<unsigned char> reques
 
                     // Problably we received some scan data message. Ignore and try again...
                     std::vector<std::string> response_keywords = { SickScanCommonTcp::getSopasCmdKeyword((uint8_t*)requestStr.data(), requestStr.size()) };
-                    if(retry_answer_cnt < 100 && (::rosNanosecTimestampNow() - retry_start_timestamp_nsec) / 1000000 < m_read_timeout_millisec_default)
+                    if(retry_answer_cnt < 100 && (::rosNanosecTimestampNow() - retry_start_timestamp_nsec) / 1000000 < static_cast<uint64_t>(m_read_timeout_millisec_default))
                     {
                         char buffer[64*1024];
                         int bytes_read = 0;
 
-                        int read_timeout_millisec = this->getReadTimeOutInMs(); // default timeout: 120 seconds (sensor may be starting up)
+                        size_t read_timeout_millisec = this->getReadTimeOutInMs(); // default timeout: 120 seconds (sensor may be starting up)
                         if (!reply->empty()) // sensor is up and running (i.e. responded with message), try again with 5 sec timeout
                         {
                             read_timeout_millisec = m_read_timeout_millisec_default;
@@ -1804,12 +1804,11 @@ int SickScanCommonTcp::checkForBinaryAnswer(const std::vector<unsigned char> *re
         else
         {
             const unsigned char *ptr = &((*reply)[0]);
-            unsigned binId = SickScanCommonTcp::convertBigEndianCharArrayToUnsignedLong(ptr);
-            unsigned cmdLen = SickScanCommonTcp::convertBigEndianCharArrayToUnsignedLong(ptr + 4);
+            size_t binId = SickScanCommonTcp::convertBigEndianCharArrayToUnsignedLong(ptr);
+            size_t cmdLen = SickScanCommonTcp::convertBigEndianCharArrayToUnsignedLong(ptr + 4);
             if (binId == 0x02020202)
             {
-                int replyLen = reply->size();
-                if (replyLen == 8 + cmdLen + 1)
+                if (reply->size() == 8 + cmdLen + 1)
                 {
                     retVal = cmdLen;
                 }

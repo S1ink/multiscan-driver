@@ -13,16 +13,17 @@
 
 #pragma once
 
-#include "BasicDatatypes.hpp"
 #ifdef _MSC_VER
 #include <winsock2.h>
 #else
 #include <sys/socket.h> /* for socket(), bind(), and connect() */
 #include <arpa/inet.h>  /* for sockaddr_in and inet_ntoa() */
 #endif
+#include <list>
+
 #include "Mutex.hpp"
 #include "SickThread.hpp"
-#include <list>
+#include "BasicDatatypes.hpp"
 
 
 //

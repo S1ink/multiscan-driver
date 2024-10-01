@@ -4,11 +4,6 @@
 // TCP-Client.
 //
 
-#include "tcp.hpp"
-#include "errorhandler.hpp"
-#include "toolbox.hpp"
-#include "wsa_init.hpp"
-#include "../sick_ros_wrapper.h"
 #include <stdio.h>      // for sprintf()
 
 #ifdef _MSC_VER
@@ -24,6 +19,12 @@
 #include <sys/poll.h>
 #include <poll.h>
 #endif
+
+#include "tcp.hpp"
+#include "errorhandler.hpp"
+#include "toolbox.hpp"
+#include "wsa_init.hpp"
+#include "../sick_ros_wrapper.h"
 
 
 Tcp::Tcp()
@@ -272,10 +273,14 @@ INT32 Tcp::readInputData()
 	// Ist die Verbindung offen?
 	if (isOpen() == false)
 	{
-    if (rosOk())
-  		ROS_ERROR("Tcp::readInputData: Connection is not open, aborting!");
+		if (rosOk())
+		{
+			ROS_ERROR("Tcp::readInputData: Connection is not open, aborting!");
+		}
 		else
-  		ROS_INFO("Tcp::readInputData: Connection is not open, aborting");
+		{
+			ROS_INFO("Tcp::readInputData: Connection is not open, aborting");
+		}
 		return -1;
 	}
 		
@@ -313,12 +318,16 @@ INT32 Tcp::readInputData()
 	if (recvMsgSize < 0)
 	{
 		// Fehler
-    if (rosOk())
-  		ROS_ERROR("Tcp::readInputData: Failed to read data from socket, aborting!");
+		if (rosOk())
+		{
+			ROS_ERROR("Tcp::readInputData: Failed to read data from socket, aborting!");
+		}
 		else
-  		ROS_INFO("Tcp::readInputData: Failed to read data from socket, aborting!");
+		{
+			ROS_INFO("Tcp::readInputData: Failed to read data from socket, aborting!");
+		}
 		ScopedLock lock(&m_socketMutex);
-		closeSocket(); // otherwise the driver can terminate with broken pipe in next call to Tcp::write()
+		this->closeSocket(); // otherwise the driver can terminate with broken pipe in next call to Tcp::write()
 	}
 	else if (recvMsgSize > 0)
 	{
@@ -342,17 +351,19 @@ INT32 Tcp::readInputData()
 				m_rxBuffer.push_back(inBuffer[i]);
 			}
 		}
-	    m_last_tcp_msg_received_nsec = ::rosNanosecTimestampNow(); // timestamp in nanoseconds of the last received tcp message (or 0 if no message received)
-		
+		m_last_tcp_msg_received_nsec = ::rosNanosecTimestampNow(); // timestamp in nanoseconds of the last received tcp message (or 0 if no message received)
 	}
 	else if (recvMsgSize == 0)
 	{
 		// Verbindungsabbruch
-    if (rosOk())
-  		ROS_ERROR("Tcp::readInputData: Read 0 bytes, connection is lost!");
+		if (rosOk())
+		{
+			ROS_ERROR("Tcp::readInputData: Read 0 bytes, connection is lost!");
+		}
 		else
-  		ROS_INFO("Tcp::readInputData: Read 0 bytes, connection is lost");
-		
+		{
+			ROS_INFO("Tcp::readInputData: Read 0 bytes, connection is lost");
+		}
 		// Informieren?
 		if (m_disconnectFunction != NULL)
 		{

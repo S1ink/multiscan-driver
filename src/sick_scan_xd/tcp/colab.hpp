@@ -6,8 +6,10 @@
 
 #pragma once
 
-#include "BasicDatatypes.hpp"
 #include <memory.h>	// for memread<>
+
+#include "BasicDatatypes.hpp"
+
 
 //
 // Parser functions for a partly implementation of the CoLa-B
