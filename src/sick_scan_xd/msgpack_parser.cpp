@@ -84,15 +84,15 @@
 #include "msgpack_parser.h"
 #include "sick_ros_wrapper.h"
 
-/** normalizes an angle to [ -PI , +PI ] */
-static float normalizeAngle(float angle_rad)
-{
-	while (angle_rad > (float)(M_PI))
-		angle_rad -= (float)(2.0 * M_PI);
-	while (angle_rad < (float)(-M_PI))
-		angle_rad += (float)(2.0 * M_PI);
-	return angle_rad;
-}
+// /** normalizes an angle to [ -PI , +PI ] */
+// static float normalizeAngle(float angle_rad)
+// {
+// 	while (angle_rad > (float)(M_PI))
+// 		angle_rad -= (float)(2.0 * M_PI);
+// 	while (angle_rad < (float)(-M_PI))
+// 		angle_rad += (float)(2.0 * M_PI);
+// 	return angle_rad;
+// }
 
  /*
   * @brief Counter for each message (each scandata decoded from msgpack data)

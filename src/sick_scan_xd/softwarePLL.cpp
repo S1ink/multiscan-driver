@@ -137,7 +137,7 @@ bool SoftwarePLL::updatePLL(uint32_t sec, uint32_t nanoSec, uint32_t curtick)
   {
     this->lastcurtick = curtick;
     double start = sec + nanoSec * 1E-9;
-    bool bRet = true;
+    // bool bRet = true;
 
     if (false == IsInitialized())
     {
