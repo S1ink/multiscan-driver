@@ -203,12 +203,13 @@ void MultiscanNode::run_receiver()
 
             sick_scan_xd::SickScanCommonTcp sopas_tcp{
                 this->config.lidar_hostname, this->config.sopas_tcp_port, this->config.use_cola_binary ? 'B' : 'A' };
-            sick_scan_xd::SopasServices sopas_service{ &sopas_tcp, true };
+            sick_scan_xd::SopasServices sopas_service{ &sopas_tcp, this->config.use_cola_binary };
             sopas_tcp.init_device();    // TODO: can block indefinitely with valid config that doesn't actually exist
             sopas_tcp.setReadTimeOutInMs(static_cast<size_t>(this->config.sopas_read_timeout * 1e3));
 
             if(sopas_tcp.isConnected())
             {
+                RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: TCP connected! Sending startup commands...");
                 sopas_service.sendAuthorization();
                 sopas_service.sendMultiScanStartCmd(
                     this->config.driver_hostname,
@@ -216,6 +217,7 @@ void MultiscanNode::run_receiver()
                     (2 - this->config.use_msgpack),
                     true,
                     this->config.lidar_udp_port);
+                RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: Successfully sent all startup commands. Proceeding to UDP decode loop.");
             }
             else
             {
