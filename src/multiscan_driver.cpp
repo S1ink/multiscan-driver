@@ -371,7 +371,7 @@ void MultiscanNode::run_receiver()
                                 for(auto& segment_queue : samples)
                                 {
                                     const auto& _seg = segment_queue.front();
-                                    uint64_t ts = _seg.timestamp_sec * 1000000000 + _seg.timestamp_nsec;
+                                    uint64_t ts = static_cast<uint64_t>(_seg.timestamp_sec) * 1000000000UL + static_cast<uint64_t>(_seg.timestamp_nsec);
                                     if(ts < earliest_ts) earliest_ts = ts;
                                     for(const auto& _group : _seg.scandata)
                                     {
@@ -397,8 +397,8 @@ void MultiscanNode::run_receiver()
                                 scan.width = scan.data.size() / 44;
                                 scan.is_dense = true;
                                 scan.header.frame_id = this->config.lidar_frame_id;
-                                scan.header.stamp.sec = earliest_ts / 1000000000;
-                                scan.header.stamp.nanosec = earliest_ts % 1000000000;
+                                scan.header.stamp.sec = earliest_ts / 1000000000UL;
+                                scan.header.stamp.nanosec = earliest_ts % 1000000000UL;
 
                                 this->scan_pub->publish(scan);
                                 filled_segments = 0;
