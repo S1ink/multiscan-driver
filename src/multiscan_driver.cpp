@@ -4,6 +4,7 @@
 #include <atomic>
 #include <vector>
 #include <deque>
+#include <limits>
 
 #include <rclcpp/rclcpp.hpp>
 
@@ -152,10 +153,15 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__count(1)
             .set__offset(36),
         sensor_msgs::msg::PointField{}
-            .set__name("t")
-            .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
+            .set__name("tl")
+            .set__datatype(sensor_msgs::msg::PointField::UINT32)
             .set__count(1)
-            .set__offset(40)
+            .set__offset(40),
+        sensor_msgs::msg::PointField{}
+            .set__name("th")
+            .set__datatype(sensor_msgs::msg::PointField::UINT32)
+            .set__count(1)
+            .set__offset(44)
     };
 
     if(autostart)
@@ -364,25 +370,27 @@ void MultiscanNode::run_receiver()
                                 // assemble and publish pc
                                 sensor_msgs::msg::PointCloud2 scan;
                                 constexpr size_t MS100_NOMINAL_POINTS_PER_SCAN = MS100_POINTS_PER_SEGMENT_ECHO * MS100_SEGMENTS_PER_FRAME;  // single echo
-                                scan.data.reserve(MS100_NOMINAL_POINTS_PER_SCAN * 44);  // 44 bytes per point
+                                constexpr size_t POINT_BYTE_LEN = 48;
+                                scan.data.reserve(MS100_NOMINAL_POINTS_PER_SCAN * POINT_BYTE_LEN);  // 48 bytes per point
                                 scan.data.resize(0);
 
-                                uint64_t earliest_ts = 0xFFFFFFFFFFFFFFFFUL;
+                                uint64_t earliest_ts = std::numeric_limits<uint64_t>::max();
                                 for(auto& segment_queue : samples)
                                 {
                                     const auto& _seg = segment_queue.front();
                                     uint64_t ts = static_cast<uint64_t>(_seg.timestamp_sec) * 1000000000UL + static_cast<uint64_t>(_seg.timestamp_nsec);
                                     if(ts < earliest_ts) earliest_ts = ts;
+
                                     for(const auto& _group : _seg.scandata)
                                     {
                                         for(const auto& _line : _group.scanlines)
                                         {
                                             for(const auto& _point : _line.points)
                                             {
-                                                scan.data.resize(scan.data.size() + 44);
-                                                uint8_t* _point_data = scan.data.end().base() - 44;
+                                                scan.data.resize(scan.data.size() + POINT_BYTE_LEN);
+                                                uint8_t* _point_data = scan.data.end().base() - POINT_BYTE_LEN;
                                                 memcpy(_point_data, &_point, 40);
-                                                reinterpret_cast<float*>(_point_data)[11] = 0.f;
+                                                reinterpret_cast<uint64_t*>(_point_data)[5] = _point.lidar_timestamp_microsec;
                                             }
                                         }
                                     }
@@ -391,10 +399,10 @@ void MultiscanNode::run_receiver()
 
                                 scan.fields = this->scan_fields;
                                 scan.is_bigendian = false;
-                                scan.point_step = 44;
+                                scan.point_step = POINT_BYTE_LEN;
                                 scan.row_step = scan.data.size();
                                 scan.height = 1;
-                                scan.width = scan.data.size() / 44;
+                                scan.width = scan.data.size() / POINT_BYTE_LEN;
                                 scan.is_dense = true;
                                 scan.header.frame_id = this->config.lidar_frame_id;
                                 scan.header.stamp.sec = earliest_ts / 1000000000UL;
