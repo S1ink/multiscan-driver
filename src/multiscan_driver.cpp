@@ -360,7 +360,10 @@ void MultiscanNode::run_receiver()
                             {
                                 const size_t idx = segment.segmentIndex;
                                 samples[idx].emplace_front();
-                                samples[idx].resize(this->config.max_segment_buffering);
+                                if(samples[idx].size() > static_cast<size_t>(this->config.max_segment_buffering))
+                                {
+                                    samples[idx].resize(this->config.max_segment_buffering);
+                                }
                                 swapSegmentsNoIMU(samples[idx].front(), segment);
                                 filled_segments |= 1 << idx;
                             }
