@@ -228,6 +228,7 @@ void MultiscanNode::run_receiver()
             else
             {
                 RCLCPP_INFO(this->get_logger(), "[MULTISCAN DRIVER]: TCP not connected! Could not send SOPAS initialization command!");
+                // TODO: restart
             }
 
             constexpr size_t RECV_BUFFER_SIZE = 64 * 1024;
