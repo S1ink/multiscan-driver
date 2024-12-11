@@ -118,7 +118,7 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__count(1)
             .set__offset(8),
         sensor_msgs::msg::PointField{}
-            .set__name("i")
+            .set__name("intensity")
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(12),
@@ -161,7 +161,12 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__name("th")
             .set__datatype(sensor_msgs::msg::PointField::UINT32)
             .set__count(1)
-            .set__offset(44)
+            .set__offset(44),
+        sensor_msgs::msg::PointField{}
+            .set__name("label")
+            .set__datatype(sensor_msgs::msg::PointField::UINT32)
+            .set__count(1)
+            .set__offset(48)
     };
 
     if(autostart)
@@ -374,8 +379,8 @@ void MultiscanNode::run_receiver()
                                 // assemble and publish pc
                                 sensor_msgs::msg::PointCloud2 scan;
                                 constexpr size_t MS100_NOMINAL_POINTS_PER_SCAN = MS100_POINTS_PER_SEGMENT_ECHO * MS100_SEGMENTS_PER_FRAME;  // single echo
-                                constexpr size_t POINT_BYTE_LEN = 48;
-                                scan.data.reserve(MS100_NOMINAL_POINTS_PER_SCAN * POINT_BYTE_LEN);  // 48 bytes per point
+                                constexpr size_t POINT_BYTE_LEN = 52;
+                                scan.data.reserve(MS100_NOMINAL_POINTS_PER_SCAN * POINT_BYTE_LEN);  // 52 bytes per point
                                 scan.data.resize(0);
 
                                 uint64_t earliest_ts = std::numeric_limits<uint64_t>::max();
@@ -395,6 +400,8 @@ void MultiscanNode::run_receiver()
                                                 uint8_t* _point_data = scan.data.end().base() - POINT_BYTE_LEN;
                                                 memcpy(_point_data, &_point, 40);
                                                 reinterpret_cast<uint64_t*>(_point_data)[5] = _point.lidar_timestamp_microsec;
+                                                reinterpret_cast<uint32_t*>(_point_data)[12] = _point.reflectorbit;
+                                                
                                             }
                                         }
                                     }
