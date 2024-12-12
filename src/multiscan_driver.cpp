@@ -163,8 +163,8 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__count(1)
             .set__offset(44),
         sensor_msgs::msg::PointField{}
-            .set__name("label")
-            .set__datatype(sensor_msgs::msg::PointField::UINT32)
+            .set__name("reflective")
+            .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(48)
     };
@@ -400,7 +400,7 @@ void MultiscanNode::run_receiver()
                                                 uint8_t* _point_data = scan.data.end().base() - POINT_BYTE_LEN;
                                                 memcpy(_point_data, &_point, 40);
                                                 reinterpret_cast<uint64_t*>(_point_data)[5] = _point.lidar_timestamp_microsec;
-                                                reinterpret_cast<uint32_t*>(_point_data)[12] = _point.reflectorbit;
+                                                reinterpret_cast<float*>(_point_data)[12] = _point.reflectorbit;
                                                 
                                             }
                                         }
