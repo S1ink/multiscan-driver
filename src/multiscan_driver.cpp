@@ -21,6 +21,41 @@
 #include "sick_scan_xd/sopas_services.h"
 
 
+// these are mutually exlusive
+#define POINT_FIELD_ENABLE_UP_TO_XYZ        0
+#define POINT_FIELD_ENABLE_UP_TO_INTENSITY  1
+#define POINT_FIELD_ENABLE_UP_TO_RANGE      2
+#define POINT_FIELD_ENABLE_UP_TO_ANGULAR    3
+#define POINT_FIELD_ENABLE_UP_TO_POINT_IDX  4
+// these form a bit field (3rd and 4th bits)
+#define POINT_FIELD_ENABLE_TS               8
+#define POINT_FIELD_ENABLE_REFLECTOR        16
+
+#define POINT_FIELD_ENABLE_ALL \
+    (POINT_FIELD_ENABLE_UP_TO_POINT_IDX | POINT_FIELD_ENABLE_TS | POINT_FIELD_ENABLE_REFLECTOR)
+#define POINT_FIELD_ENABLE_XYZTR \
+    (POINT_FIELD_ENABLE_UP_TO_XYZ | POINT_FIELD_ENABLE_TS | POINT_FIELD_ENABLE_REFLECTOR)
+
+#ifndef POINT_FIELD_SECTIONS_ENABLED
+#define POINT_FIELD_SECTIONS_ENABLED        POINT_FIELD_ENABLE_ALL
+#endif
+
+#define NUM_CONTIGUOUS_POINT_FIELDS \
+    ( \
+        3 + \
+        ((POINT_FIELD_SECTIONS_ENABLED & 4) >= 1) + \
+        ((POINT_FIELD_SECTIONS_ENABLED & 4) >= 2) + \
+        ((POINT_FIELD_SECTIONS_ENABLED & 4) >= 3) * 2 + \
+        ((POINT_FIELD_SECTIONS_ENABLED & 4) >= 4) * 3 \
+    )
+#define NUM_POINT_FIELDS \
+    ( \
+        NUM_CONTIGUOUS_POINT_FIELDS + \
+        ((POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_TS) > 0) * 2 + \
+        ((POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_REFLECTOR) > 0) \
+    )
+
+
 class MultiscanNode : public rclcpp::Node
 {
 public:
@@ -117,16 +152,21 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(8),
+    #if (POINT_FIELD_SECTIONS_ENABLED & 4) >= POINT_FIELD_ENABLE_UP_TO_INTENSITY
         sensor_msgs::msg::PointField{}
             .set__name("intensity")
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(12),
+    #endif
+    #if (POINT_FIELD_SECTIONS_ENABLED & 4) >= POINT_FIELD_ENABLE_UP_TO_RANGE
         sensor_msgs::msg::PointField{}
             .set__name("range")
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(16),
+    #endif
+    #if (POINT_FIELD_SECTIONS_ENABLED & 4) >= POINT_FIELD_ENABLE_UP_TO_ANGULAR
         sensor_msgs::msg::PointField{}
             .set__name("azimuth")
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
@@ -137,6 +177,8 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(24),
+    #endif
+    #if (POINT_FIELD_SECTIONS_ENABLED & 4) >= POINT_FIELD_ENABLE_UP_TO_POINT_IDX
         sensor_msgs::msg::PointField{}
             .set__name("layer")
             .set__datatype(sensor_msgs::msg::PointField::UINT32)
@@ -152,6 +194,8 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__datatype(sensor_msgs::msg::PointField::UINT32)
             .set__count(1)
             .set__offset(36),
+    #endif
+    #if (POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_TS)
         sensor_msgs::msg::PointField{}
             .set__name("tl")
             .set__datatype(sensor_msgs::msg::PointField::UINT32)
@@ -162,11 +206,14 @@ MultiscanNode::MultiscanNode(bool autostart) :
             .set__datatype(sensor_msgs::msg::PointField::UINT32)
             .set__count(1)
             .set__offset(44),
+    #endif
+    #if (POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_REFLECTOR)
         sensor_msgs::msg::PointField{}
             .set__name("reflective")
             .set__datatype(sensor_msgs::msg::PointField::FLOAT32)
             .set__count(1)
             .set__offset(48)
+    #endif
     };
 
     if(autostart)
@@ -379,7 +426,8 @@ void MultiscanNode::run_receiver()
                                 // assemble and publish pc
                                 sensor_msgs::msg::PointCloud2 scan;
                                 constexpr size_t MS100_NOMINAL_POINTS_PER_SCAN = MS100_POINTS_PER_SEGMENT_ECHO * MS100_SEGMENTS_PER_FRAME;  // single echo
-                                constexpr size_t POINT_BYTE_LEN = 52;
+                                constexpr size_t POINT_CONTINUOUS_BYTE_LEN = NUM_CONTIGUOUS_POINT_FIELDS * 4;
+                                constexpr size_t POINT_BYTE_LEN = NUM_POINT_FIELDS * 4;
                                 scan.data.reserve(MS100_NOMINAL_POINTS_PER_SCAN * POINT_BYTE_LEN);  // 52 bytes per point
                                 scan.data.resize(0);
 
@@ -398,10 +446,13 @@ void MultiscanNode::run_receiver()
                                             {
                                                 scan.data.resize(scan.data.size() + POINT_BYTE_LEN);
                                                 uint8_t* _point_data = scan.data.end().base() - POINT_BYTE_LEN;
-                                                memcpy(_point_data, &_point, 40);
-                                                reinterpret_cast<uint64_t*>(_point_data)[5] = _point.lidar_timestamp_microsec;
-                                                reinterpret_cast<float*>(_point_data)[12] = _point.reflectorbit;
-                                                
+                                                memcpy(_point_data, &_point, POINT_CONTINUOUS_BYTE_LEN);
+                                            #if (POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_TS)
+                                                reinterpret_cast<uint64_t*>(_point_data)[POINT_CONTINUOUS_BYTE_LEN / sizeof(uint64_t)] = _point.lidar_timestamp_microsec;
+                                            #endif
+                                            #if (POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_REFLECTOR)
+                                                reinterpret_cast<float*>(_point_data)[POINT_CONTINUOUS_BYTE_LEN / sizeof(float) + ((POINT_FIELD_SECTIONS_ENABLED & POINT_FIELD_ENABLE_TS) > 0) * 2] = _point.reflectorbit;
+                                            #endif
                                             }
                                         }
                                     }
